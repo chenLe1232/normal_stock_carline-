@@ -94,3 +94,40 @@
 2025-03-09 03:17:13,460 - app.utils.tushare_utils - INFO - 概率数据已保存到./data/600192.SH_m3_probability.csv
 2025-03-09 03:17:13,461 - app.utils.tushare_utils - INFO - 分析股票600192.SH m3 耗时: 9.056546926498413秒
 2025-03-09 03:20:04,817 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:22:55,588 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:23:00,036 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:24:23,515 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:24:47,562 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:25:20,407 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:25:21,972 - app.utils.tushare_utils - ERROR - 处理文件./data/600192.SH_m1_probability.csv时出错: 'max_pct_sum'
+2025-03-09 03:25:21,977 - app.utils.tushare_utils - ERROR - 处理文件./data/600192.SH_m3_probability.csv时出错: 'max_pct_sum'
+2025-03-09 03:25:23,681 - app.utils.tushare_utils - ERROR - 处理文件./data/600192.SH_m1_probability.csv时出错: 'max_pct_sum'
+2025-03-09 03:25:23,685 - app.utils.tushare_utils - ERROR - 处理文件./data/600192.SH_m3_probability.csv时出错: 'max_pct_sum'
+2025-03-09 03:25:35,263 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:25:37,284 - app.utils.tushare_utils - ERROR - 处理文件./data/600192.SH_m1_probability.csv时出错: 'max_pct_sum'
+2025-03-09 03:25:37,285 - app.utils.tushare_utils - ERROR - 处理文件./data/600192.SH_m3_probability.csv时出错: 'max_pct_sum'
+2025-03-09 03:26:22,452 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:27:20,041 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:27:35,004 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:28:06,422 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:28:38,046 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:29:28,259 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:30:30,494 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:30:59,584 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:31:19,191 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 03:31:33,902 - app.utils.tushare_utils - INFO - 获取股票600192.SH日线数据成功，共2472条记录
+2025-03-09 03:31:33,914 - app.utils.tushare_utils - INFO - 预先批量获取竞价和分钟数据，共115个交易日
+2025-03-09 03:31:33,914 - app.utils.tushare_utils - INFO - 批量获取竞价数据，批次1/2，共100个交易日
+2025-03-09 03:31:36,220 - app.utils.tushare_utils - INFO - 批量获取竞价数据，批次2/2，共15个交易日
+2025-03-09 03:31:37,515 - app.utils.tushare_utils - INFO - 批量获取竞价数据完成，耗时: 3.600898027420044秒
+2025-03-09 03:31:37,515 - app.utils.tushare_utils - INFO - 开始获取1min分钟数据
+2025-03-09 03:31:37,515 - app.utils.tushare_utils - INFO - 批量获取1min分钟数据，批次1/2，共100个交易日
+2025-03-09 03:31:39,263 - app.utils.tushare_utils - INFO - 批量获取1min分钟数据，批次2/2，共15个交易日
+2025-03-09 03:31:40,412 - app.utils.tushare_utils - INFO - 开始获取5min分钟数据
+2025-03-09 03:31:40,412 - app.utils.tushare_utils - INFO - 批量获取5min分钟数据，批次1/2，共100个交易日
+2025-03-09 03:31:42,202 - app.utils.tushare_utils - INFO - 批量获取5min分钟数据，批次2/2，共15个交易日
+2025-03-09 03:31:43,396 - app.utils.tushare_utils - INFO - 开始获取15min分钟数据
+2025-03-09 03:31:43,396 - app.utils.tushare_utils - INFO - 批量获取15min分钟数据，批次1/2，共100个交易日
+2025-03-09 03:31:45,184 - app.utils.tushare_utils - INFO - 批量获取15min分钟数据，批次2/2，共15个交易日
+2025-03-09 03:31:46,510 - app.utils.tushare_utils - INFO - 开始获取30min分钟数据
+2025-03-09 03:31:46,510 - app.utils.tushare_utils - INFO - 批量获取30min分钟数据，批次1/2，共100个交易日

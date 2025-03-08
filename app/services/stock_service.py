@@ -240,7 +240,10 @@ class StockService:
                 "up_prob": result.get("up_prob", 0),
                 "down_prob": result.get("down_prob", 0),
                 "equal_prob": result.get("equal_prob", 0),
-                "avg_total": result.get("avg_total", 0)
+                "avg_total": result.get("avg_total", 0),
+                "max_pct": result.get("max_pct", 0),
+                "min_pct": result.get("min_pct", 0),
+                "close_pct": result.get("close_pct", 0)
             }
             
             return formatted_result

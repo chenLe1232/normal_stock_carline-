@@ -722,6 +722,9 @@ def get_stock_probability_by_pct(ts_code: str, pct_chg: float) -> Dict[str, Dict
         total_equal_prob = 0
         total_samples = 0
         total_time_periods = 0
+        max_pct = 0
+        min_pct = 0
+        close_pct = 0
         
         # 遍历所有概率文件
         for file_path in probability_files:
@@ -743,7 +746,11 @@ def get_stock_probability_by_pct(ts_code: str, pct_chg: float) -> Dict[str, Dict
                     total_equal_prob += row['平概率']
                     total_samples += row['样本数']
                     total_time_periods += 1
-            
+                    # 如果列不存在，则设置为0
+                    max_pct = max(max_pct, row.get('最大涨幅', 0))
+                    min_pct = min(min_pct, row.get('最小涨幅', 0))
+                    close_pct = row.get('收盘涨幅', 0)
+                    
             except Exception as e:
                 logger.error("处理文件%s时出错: %s", file_path, e)
                 continue
@@ -755,9 +762,12 @@ def get_stock_probability_by_pct(ts_code: str, pct_chg: float) -> Dict[str, Dict
                 'up_prob': round(total_up_prob / total_time_periods, 2),
                 'down_prob': round(total_down_prob / total_time_periods, 2),
                 'equal_prob': round(total_equal_prob / total_time_periods, 2),
-                'avg_total': round(total_samples / total_time_periods, 2)
+                'avg_total': round(total_samples / total_time_periods, 2),
+                'max_pct': max_pct,
+                'min_pct': min_pct,
+                'close_pct': close_pct
             }
-        
+    
         return result
     
     except Exception as e:
