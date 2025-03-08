@@ -72,10 +72,10 @@ LIST_RANGE_MAP = {
 }
 
 TIME_PERIOD_MAP = {
-    'm1': '近1月',
+    # 'm1': '近1月',
     # 'm3': '3月',
     # 'm6': '6月',
-    # 'y1': '1年',
+    'y1': '1年',
     # 'y2': '2年',
     # 'y3': '3年',
     # 'y4': '4年',
@@ -389,7 +389,13 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str) -> Dict[st
         # 初始化结果字典
         result = {}
         
-        # 创建数据缓存，避免重复API调用
+        # 获取唯一的交易日期和股票代码
+        next_trade_dates = period_data['next_trade_date'].dropna().unique()
+        ts_code = period_data['ts_code'].iloc[0]  # 假设所有行的ts_code都相同
+        
+        logger.info("预先批量获取竞价和分钟数据，共%s个交易日", len(next_trade_dates))
+        
+        # 使用线程安全的字典
         auction_cache = {}
         minute_data_cache = {
             '1min': {},
@@ -399,35 +405,63 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str) -> Dict[st
             '60min': {}
         }
         
-        # 预先获取所有需要的交易日期
-        next_trade_dates = period_data['next_trade_date'].dropna().unique()
-        ts_code = period_data['ts_code'].iloc[0]
+        # 批量处理，每批100个交易日
+        batch_size = 100
         
-        # 预先批量获取竞价数据
-        logger.info("预先批量获取竞价数据，共%s个交易日", len(next_trade_dates))
+        # 批量获取竞价数据
         batch_start_time = time.time()
-        for trade_date in next_trade_dates:
-            auction_cache[trade_date] = get_auction_data(ts_code, trade_date)
+        for i in range(0, len(next_trade_dates), batch_size):
+            batch_dates = next_trade_dates[i:i+batch_size]
+            logger.info("批量获取竞价数据，批次%s/%s，共%s个交易日", 
+                       i//batch_size + 1, (len(next_trade_dates) + batch_size - 1)//batch_size, len(batch_dates))
+            
+            # 使用多线程并行获取该批次的竞价数据
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(10, len(batch_dates))) as executor:
+                future_to_date = {executor.submit(get_auction_data, ts_code, date): date for date in batch_dates}
+                for future in concurrent.futures.as_completed(future_to_date):
+                    date = future_to_date[future]
+                    try:
+                        auction_cache[date] = future.result()
+                    except Exception as e:
+                        logger.error("获取交易日%s的竞价数据失败: %s", date, e)
+            
+            # 添加延迟，避免请求过快
+            time.sleep(1)
+        
         logger.info("批量获取竞价数据完成，耗时: %s秒", time.time() - batch_start_time)
         
-        # 预先批量获取分钟数据
-        logger.info("预先批量获取分钟数据，共%s个交易日", len(next_trade_dates))
+        # 批量获取分钟数据
         batch_start_time = time.time()
-        
-        # 使用多线程并行获取分钟数据
-        def fetch_minute_data(trade_date):
-            minute_data_cache['1min'][trade_date] = get_minutes_data(ts_code, trade_date, 1)
-            minute_data_cache['5min'][trade_date] = get_minutes_data(ts_code, trade_date, 5)
-            minute_data_cache['15min'][trade_date] = get_minutes_data(ts_code, trade_date, 15)
-            minute_data_cache['30min'][trade_date] = get_minutes_data(ts_code, trade_date, 30)
-            minute_data_cache['60min'][trade_date] = get_minutes_data(ts_code, trade_date, 60)
-        
-        # 限制并发线程数，避免过多API调用
-        max_workers = min(10, len(next_trade_dates))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            executor.map(fetch_minute_data, next_trade_dates)
+        for freq, time_key in [(1, '1min'), (5, '5min'), (15, '15min'), (30, '30min'), (60, '60min')]:
+            logger.info("开始获取%s分钟数据", time_key)
+            
+            for i in range(0, len(next_trade_dates), batch_size):
+                batch_dates = next_trade_dates[i:i+batch_size]
+                logger.info("批量获取%s分钟数据，批次%s/%s，共%s个交易日", 
+                           time_key, i//batch_size + 1, (len(next_trade_dates) + batch_size - 1)//batch_size, len(batch_dates))
+                
+                # 使用多线程并行获取该批次的分钟数据
+                with concurrent.futures.ThreadPoolExecutor(max_workers=min(10, len(batch_dates))) as executor:
+                    future_to_date = {executor.submit(get_minutes_data, ts_code, date, freq): date for date in batch_dates}
+                    for future in concurrent.futures.as_completed(future_to_date):
+                        date = future_to_date[future]
+                        try:
+                            minute_data_cache[time_key][date] = future.result()
+                        except Exception as e:
+                            logger.error("获取交易日%s的%s分钟数据失败: %s", date, time_key, e)
+                
+                # 添加延迟，避免请求过快
+                time.sleep(1)
         
         logger.info("批量获取分钟数据完成，耗时: %s秒", time.time() - batch_start_time)
+        
+        # 检查数据获取情况
+        logger.info("竞价数据获取情况: 共%s/%s个交易日有数据", 
+                   sum(1 for d in auction_cache.values() if not d.empty), len(next_trade_dates))
+        
+        for time_key in minute_data_cache:
+            logger.info("%s数据获取情况: 共%s/%s个交易日有数据", 
+                       time_key, sum(1 for d in minute_data_cache[time_key].values() if not d.empty), len(next_trade_dates))
         
         # 遍历每个涨跌幅分类
         for category in period_data['pct_chg_category'].unique():
@@ -492,6 +526,7 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str) -> Dict[st
         return result
     except Exception as e:
         logger.error("计算概率失败: %s", e)
+        traceback.print_exc()  # 打印完整的堆栈跟踪
         return {}
 
 def calculate_minutes_data(minute_data: pd.DataFrame, category: str, time_key: str, result: Dict[str, Dict[str, Dict[str, float]]], row: pd.Series) -> pd.DataFrame:
