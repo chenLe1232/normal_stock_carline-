@@ -1,0 +1,47 @@
+2025-03-09 01:59:44,554 - app.utils.tushare_utils - INFO - 获取股票600192.SH日线数据成功，共2472条记录
+2025-03-09 01:59:44,556 - app.utils.tushare_utils - INFO - 预先批量获取竞价和分钟数据，共22个交易日
+2025-03-09 02:00:17,061 - app.utils.tushare_utils - INFO - 批量获取所有数据完成，耗时: 32.50531768798828秒
+2025-03-09 02:00:17,061 - app.utils.tushare_utils - INFO - 竞价数据获取情况: 共22/22个交易日有数据
+2025-03-09 02:00:17,061 - app.utils.tushare_utils - INFO - 1min数据获取情况: 共22/22个交易日有数据
+2025-03-09 02:00:17,061 - app.utils.tushare_utils - INFO - 5min数据获取情况: 共22/22个交易日有数据
+2025-03-09 02:00:17,061 - app.utils.tushare_utils - INFO - 15min数据获取情况: 共22/22个交易日有数据
+2025-03-09 02:00:17,061 - app.utils.tushare_utils - INFO - 30min数据获取情况: 共22/22个交易日有数据
+2025-03-09 02:00:17,061 - app.utils.tushare_utils - INFO - 60min数据获取情况: 共22/22个交易日有数据
+2025-03-09 02:00:17,064 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: medium_down, 共6条记录, 时间周期: m1, 耗时: 0.0021560192108154297秒
+2025-03-09 02:00:17,065 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: range_1_3p, 共3条记录, 时间周期: m1, 耗时: 0.0010128021240234375秒
+2025-03-09 02:00:17,066 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: limit_up, 共3条记录, 时间周期: m1, 耗时: 0.0010001659393310547秒
+2025-03-09 02:00:17,066 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: limit_down, 共1条记录, 时间周期: m1, 耗时: 0.00045990943908691406秒
+2025-03-09 02:00:17,068 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: range_3_5p, 共4条记录, 时间周期: m1, 耗时: 0.0010008811950683594秒
+2025-03-09 02:00:17,068 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: large_down, 共2条记录, 时间周期: m1, 耗时: 0.0006701946258544922秒
+2025-03-09 02:00:17,069 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: small_down, 共1条记录, 时间周期: m1, 耗时: 0.0003540515899658203秒
+2025-03-09 02:00:17,070 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: micro_up, 共2条记录, 时间周期: m1, 耗时: 0.0006690025329589844秒
+2025-03-09 02:00:17,070 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: flat, 共1条记录, 时间周期: m1, 耗时: 0.0003571510314941406秒
+2025-03-09 02:00:17,072 - app.utils.tushare_utils - INFO - 概率数据已保存到./data/600192.SH_m1_probability.csv
+2025-03-09 02:00:17,072 - app.utils.tushare_utils - INFO - 分析股票600192.SH m1 耗时: 32.51712703704834秒
+2025-03-09 02:00:41,627 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 02:00:52,266 - app.utils.tushare_utils - INFO - 获取股票600192.SH日线数据成功，共2472条记录
+2025-03-09 02:01:38,538 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 02:01:44,113 - app.utils.tushare_utils - INFO - 获取股票600192.SH日线数据成功，共2472条记录
+2025-03-09 02:01:44,114 - app.utils.tushare_utils - INFO - 预先批量获取竞价数据，共241个交易日
+2025-03-09 02:02:19,219 - app.utils.tushare_utils - INFO - 批量获取竞价数据完成，耗时: 35.10478496551514秒
+2025-03-09 02:02:19,220 - app.utils.tushare_utils - INFO - 预先批量获取分钟数据，共241个交易日
+2025-03-09 02:02:23,307 - app.utils.tushare_utils - INFO - 已达到每分钟500次请求限制，等待55.913557052612305秒
+2025-03-09 02:03:23,542 - app.utils.tushare_utils - INFO - 已达到每分钟500次请求限制，等待55.692726135253906秒
+2025-03-09 02:04:36,040 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 02:04:36,358 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 02:04:40,399 - app.utils.tushare_utils - INFO - 获取股票600192.SH日线数据成功，共2472条记录
+2025-03-09 02:04:40,401 - app.utils.tushare_utils - INFO - 预先批量获取竞价数据，共22个交易日
+2025-03-09 02:04:43,658 - app.utils.tushare_utils - INFO - 批量获取竞价数据完成，耗时: 3.2566840648651123秒
+2025-03-09 02:04:43,658 - app.utils.tushare_utils - INFO - 预先批量获取分钟数据，共22个交易日
+2025-03-09 02:04:44,749 - app.utils.tushare_utils - INFO - 批量获取分钟数据完成，耗时: 1.091115951538086秒
+2025-03-09 02:04:44,764 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: medium_down, 共6条记录, 时间周期: m1, 耗时: 0.01231694221496582秒
+2025-03-09 02:04:44,773 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: range_1_3p, 共3条记录, 时间周期: m1, 耗时: 0.007693052291870117秒
+2025-03-09 02:04:44,780 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: limit_up, 共3条记录, 时间周期: m1, 耗时: 0.005896091461181641秒
+2025-03-09 02:04:44,783 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: limit_down, 共1条记录, 时间周期: m1, 耗时: 0.0022492408752441406秒
+2025-03-09 02:04:44,786 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: range_3_5p, 共4条记录, 时间周期: m1, 耗时: 0.0024292469024658203秒
+2025-03-09 02:04:44,788 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: large_down, 共2条记录, 时间周期: m1, 耗时: 0.0014619827270507812秒
+2025-03-09 02:04:44,789 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: small_down, 共1条记录, 时间周期: m1, 耗时: 0.0008029937744140625秒
+2025-03-09 02:04:44,791 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: micro_up, 共2条记录, 时间周期: m1, 耗时: 0.0015077590942382812秒
+2025-03-09 02:04:44,792 - app.utils.tushare_utils - INFO - 遍历该分类的每一天 当前category: flat, 共1条记录, 时间周期: m1, 耗时: 0.0007801055908203125秒
+2025-03-09 02:04:44,796 - app.utils.tushare_utils - INFO - 概率数据已保存到./data/600192.SH_m1_probability.csv
+2025-03-09 02:04:44,796 - app.utils.tushare_utils - INFO - 分析股票600192.SH m1 耗时: 4.397004842758179秒
