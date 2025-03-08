@@ -72,14 +72,14 @@ LIST_RANGE_MAP = {
 }
 
 TIME_PERIOD_MAP = {
-    # 'm1': '近1月',
-    # 'm3': '3月',
-    # 'm6': '6月',
+    'm1': '近1月',
+    'm3': '3月',
+    'm6': '6月',
     'y1': '1年',
-    # 'y2': '2年',
-    # 'y3': '3年',
-    # 'y4': '4年',
-    # 'y5': '5年'
+    'y2': '2年',
+    'y3': '3年',
+    'y4': '4年',
+    'y5': '5年'
 }
 
 TIME_FREQ_MAP = {
@@ -608,29 +608,29 @@ def analyze_stock(ts_code: str) -> Dict[str, Any]:
             # 检查本地是否已有该时间维度的分析结果
             file_path = os.path.join(data_dir, f"{ts_code}_{time_period}_probability.csv")
             
-            # if os.path.exists(file_path):
-            #     # 如果文件存在且是今天生成的，直接读取
-            #     file_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
-            #     if file_time.date() == datetime.datetime.now().date():
-            #         df = pd.read_csv(file_path, encoding='utf-8-sig')
+            if os.path.exists(file_path):
+                # 如果文件存在且是今天生成的，直接读取
+                file_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+                if file_time.date() == datetime.datetime.now().date():
+                    df = pd.read_csv(file_path, encoding='utf-8-sig')
                    
-            #         # 转换为字典格式
-            #         period_result = {}
-            #         for category in df['当日涨幅'].unique():
-            #             category_data = df[df['当日涨幅'] == category]
-            #             period_result[category] = {}
+                    # 转换为字典格式
+                    period_result = {}
+                    for category in df['当日涨幅'].unique():
+                        category_data = df[df['当日涨幅'] == category]
+                        period_result[category] = {}
                         
-            #             for _, row in category_data.iterrows():
-            #                 time_key = next((k for k, v in TIME_FREQ_MAP.items() if v == row['时间段']), row['时间段'])
-            #                 period_result[category][time_key] = {
-            #                     'up_prob': row['涨概率'],
-            #                     'down_prob': row['跌概率'],
-            #                     'equal_prob': row['平概率'],
-            #                     'total': row['样本数']
-            #                 }
+                        for _, row in category_data.iterrows():
+                            time_key = next((k for k, v in TIME_FREQ_MAP.items() if v == row['时间段']), row['时间段'])
+                            period_result[category][time_key] = {
+                                'up_prob': row['涨概率'],
+                                'down_prob': row['跌概率'],
+                                'equal_prob': row['平概率'],
+                                'total': row['样本数']
+                            }
                     
-            #         results[time_period] = period_result
-            #         continue
+                    results[time_period] = period_result
+                    continue
             
             # 计算概率
             probability = calculate_probability(stock_data, time_period)

@@ -173,14 +173,14 @@ class StockService:
             all_probabilities = {}
             total_stocks = len(stocks)
             
-            logger.info(f"开始获取{total_stocks}只股票的涨跌概率数据")
+            logger.info("开始获取%s只股票的涨跌概率数据", total_stocks)
             
             # 遍历所有股票，获取概率数据
             for i, stock in enumerate(stocks):
                 ts_code = stock['ts_code']
                 stock_name = stock['name']
                 
-                logger.info(f"正在处理第{i+1}/{total_stocks}只股票: {ts_code} {stock_name}")
+                logger.info(f"==========正在处理第{i+1}/{total_stocks}只股票: {ts_code} {stock_name}==========")
                 
                 # 获取股票概率数据
                 result = StockService.get_stock_probability(ts_code)
@@ -200,7 +200,7 @@ class StockService:
                 else:
                     logger.warning(f"获取股票{ts_code} {stock_name}的概率数据失败: {result['error']}")
             
-            logger.info(f"成功获取{len(all_probabilities)}/{total_stocks}只股票的涨跌概率数据")
+            logger.info(f"==========成功获取{len(all_probabilities)}/{total_stocks}只股票的涨跌概率数据==========")
             
             return all_probabilities
         except Exception as e:
