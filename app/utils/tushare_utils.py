@@ -37,7 +37,7 @@ class RequestLimiter:
                 oldest_request = self.request_times[0]
                 wait_time = 60 - (now - oldest_request)
                 if wait_time > 0:
-                    logger.info("已达到每分钟%s次请求限制，等待%s秒", self.max_requests, wait_time)
+                    # logger.info("已达到每分钟%s次请求限制，等待%s秒", self.max_requests, wait_time)
                     time.sleep(wait_time)
                     # 重新开始计时
                     now = time.time()
@@ -166,7 +166,6 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
         # !!! 取 20250307
         latest_trade_date = '20250307'
         
-        logger.info("获取到最新交易日期: %s", latest_trade_date)
         
         try:
             # 检查是否有足够的积分调用daily_basic接口
