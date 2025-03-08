@@ -40,6 +40,27 @@ async def get_stock_info(ts_code: str) -> Dict[str, Any]:
         "data": result
     }
 
+@router.get("/all/probability")
+async def get_all_stocks_probability(
+    time_period: Optional[str] = Query(None, description="时间周期，如m1, m3, m6, y1等")
+) -> Dict[str, Any]:
+    """获取所有股票的涨跌概率
+    
+    Args:
+        time_period: 时间周期，如m1, m3, m6, y1等，不指定则返回所有时间周期
+    """
+    result = StockService.get_all_stocks_probability(time_period)
+    
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+    
+    return {
+        "status": "success",
+        "message": "获取所有股票涨跌概率成功",
+        "data": result,
+        "total": len(result)
+    }
+
 @router.get("/{ts_code}/probability")
 async def get_stock_probability(
     ts_code: str,
@@ -68,4 +89,29 @@ async def get_stock_probability(
         "status": "success",
         "message": "获取股票涨跌概率成功",
         "data": result
-    } 
+    }
+
+# 查询特定股票在特定涨幅范围内的平均概率。GET /{ts_code}/probability/pct?pct_chg=4.75
+@router.get("/{ts_code}/probability/pct")
+async def get_stock_probability_by_pct(
+    ts_code: str,
+    pct_chg: float = Query(..., description="涨幅百分比")
+) -> Dict[str, Any]:
+    """获取特定股票在特定涨幅范围内的平均概率
+    
+    计算所有时间段的平均概率，返回单一的概率值
+
+    Args:
+        ts_code: 股票代码，如 000001.SZ
+        pct_chg: 涨幅百分比
+    """
+    result = StockService.get_stock_probability_by_pct(ts_code, pct_chg)
+    
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    
+    return {
+        "status": "success",
+        "message": "获取股票在特定涨幅下的平均概率成功",
+        "data": result
+    }

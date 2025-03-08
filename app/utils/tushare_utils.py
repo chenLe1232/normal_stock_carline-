@@ -6,6 +6,7 @@ import time
 from typing import Dict, List, Optional, Any, Tuple
 import logging
 import threading
+import glob
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -68,9 +69,9 @@ LIST_RANGE_MAP = {
 }
 
 TIME_PERIOD_MAP = {
-    'm1': '近1月'
-    # 'm3': '3月',
-    # 'm6': '6月',
+    'm1': '近1月',
+    'm3': '3月',
+    'm6': '6月',
     # 'y1': '1年',
     # 'y2': '2年',
     # 'y3': '3年',
@@ -143,6 +144,9 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
         # 排除北交所股票
         filtered_stocks = stocks[~stocks['ts_code'].str.endswith('.BJ')]
         logger.info(f"排除北交所股票后，剩余{len(filtered_stocks)}条记录")
+        # 排除科创板 ts_code 688开头
+        filtered_stocks = filtered_stocks[~filtered_stocks['ts_code'].str.startswith('688')]
+        logger.info(f"排除科创板后，剩余{len(filtered_stocks)}条记录")
         
         # 获取最新交易日期
         latest_trade_date = pro.trade_cal(exchange='', start_date=datetime.datetime.now().strftime('%Y%m%d'), 
@@ -169,7 +173,7 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
             # 尝试获取市值数据
             market_values = []
             # 分批获取，避免一次性请求过多
-            batch_size = 100
+            batch_size = 1000
             for i in range(0, len(filtered_stocks), batch_size):
                 batch = filtered_stocks.iloc[i:i+batch_size]
                 ts_codes = ','.join(batch['ts_code'].tolist())
@@ -208,7 +212,7 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
                     merged_df = pd.merge(filtered_stocks, market_value_df, on='ts_code', how='left')
                     
                     # 保存合并后的数据到CSV文件，方便调试
-                    merged_df.to_csv('data/merged_stocks.csv', index=False, encoding='utf-8-sig')
+                    # merged_df.to_csv('data/merged_stocks.csv', index=False, encoding='utf-8-sig')
                     logger.info(f"已将合并后的数据保存到data/merged_stocks.csv，共{len(merged_df)}条记录")
                     
                     # 过滤市值在10 * 10000到5000 * 10000 之间的股票单位 万元
@@ -218,20 +222,20 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
                     # 只有在市值数据不为空的情况下才进行过滤
                     if 'total_mv' in merged_df.columns and not merged_df['total_mv'].isna().all():
                         # 保存过滤前的数据
-                        merged_df.to_csv('data/before_filter.csv', index=False, encoding='utf-8-sig')
+                        # merged_df.to_csv('data/before_filter.csv', index=False, encoding='utf-8-sig')
                         
                         # 过滤市值
                         result = merged_df[(merged_df['total_mv'] >= low_mv) & (merged_df['total_mv'] <= high_mv)]
                         
                         # 保存过滤后的数据
-                        result.to_csv('data/after_filter.csv', index=False, encoding='utf-8-sig')
+                        # result.to_csv('data/after_filter.csv', index=False, encoding='utf-8-sig')
                         
                         logger.info(f"过滤市值后，剩余{len(result)}条记录")
                        
                         
                         # 保存被过滤掉的数据
                         filtered_out = merged_df[~merged_df.index.isin(result.index)]
-                        filtered_out.to_csv('data/filtered_out.csv', index=False, encoding='utf-8-sig')
+                        # filtered_out.to_csv('data/filtered_out.csv', index=False, encoding='utf-8-sig')
                         logger.info(f"被过滤掉的记录已保存到data/filtered_out.csv，共{len(filtered_out)}条记录")
                     else:
                         logger.warning("市值数据为空，无法进行市值过滤")
@@ -534,4 +538,80 @@ def analyze_stock(ts_code: str) -> Dict[str, Any]:
         # 打印完成错误堆栈
         print(traceback.format_exc())
         logger.error(f"分析股票{ts_code}失败: {e}")
-        return {"error": str(e)} 
+        return {"error": str(e)}
+
+def get_stock_probability_by_pct(ts_code: str, pct_chg: float) -> Dict[str, Dict[str, float]]:
+    """
+    获取特定股票在特定涨幅范围内的平均概率
+    
+    Args:
+        ts_code: 股票代码
+        pct_chg: 涨跌幅百分比，例如4.75
+        
+    Returns:
+        所有时间段的平均概率数据
+    """
+    try:
+        # 根据涨跌幅确定对应的分类
+        category = categorize_pct_change(pct_chg)
+        
+        # 获取对应的涨幅区间显示值
+        display_range = LIST_RANGE_MAP.get(category, category)
+        
+        # 创建数据目录
+        data_dir = os.getenv('DATA_DIR', './data')
+        
+        # 查找所有该股票的概率文件
+        probability_files = glob.glob(os.path.join(data_dir, f"{ts_code}_*_probability.csv"))
+        
+        if not probability_files:
+            logger.warning(f"未找到股票{ts_code}的概率数据文件")
+            return {}
+        
+        # 初始化结果字典 - 用于存储所有时间段的总和
+        total_up_prob = 0
+        total_down_prob = 0
+        total_equal_prob = 0
+        total_samples = 0
+        total_time_periods = 0
+        
+        # 遍历所有概率文件
+        for file_path in probability_files:
+            try:
+                # 读取CSV文件
+                df = pd.read_csv(file_path)
+                
+                # 筛选特定涨幅区间的数据
+                filtered_df = df[df['当日涨幅'] == display_range]
+                
+                if filtered_df.empty:
+                    logger.warning(f"文件{file_path}中没有涨幅为{display_range}的数据")
+                    continue
+                
+                # 计算所有时间段的总和
+                for _, row in filtered_df.iterrows():
+                    total_up_prob += row['涨概率']
+                    total_down_prob += row['跌概率']
+                    total_equal_prob += row['平概率']
+                    total_samples += row['样本数']
+                    total_time_periods += 1
+            
+            except Exception as e:
+                logger.error(f"处理文件{file_path}时出错: {e}")
+                continue
+        
+        # 计算平均概率
+        result = {}
+        if total_time_periods > 0:
+            result = {
+                'up_prob': round(total_up_prob / total_time_periods, 2),
+                'down_prob': round(total_down_prob / total_time_periods, 2),
+                'equal_prob': round(total_equal_prob / total_time_periods, 2),
+                'avg_total': round(total_samples / total_time_periods, 2)
+            }
+        
+        return result
+    
+    except Exception as e:
+        logger.error(f"获取股票{ts_code}在涨幅{pct_chg}下的平均概率失败: {e}")
+        return {} 
