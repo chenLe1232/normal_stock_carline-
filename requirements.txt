@@ -1,0 +1,11 @@
+fastapi==0.104.1
+uvicorn==0.23.2
+python-dotenv==1.0.0
+pytest==7.4.3 
+pandas >= 2.1.3
+numpy >= 1.26.1
+matplotlib >= 3.8.0
+tushare >= 1.4.0
+requests >= 2.31.0
+beautifulsoup4 >= 4.12.0
+scikit-learnpython-dotenv
