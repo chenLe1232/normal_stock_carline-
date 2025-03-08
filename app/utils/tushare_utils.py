@@ -74,12 +74,13 @@ LIST_RANGE_MAP = {
 TIME_PERIOD_MAP = {
     'm1': '近1月',
     'm3': '3月',
-    'm6': '6月',
-    'y1': '1年',
-    'y2': '2年',
-    'y3': '3年',
-    'y4': '4年',
-    'y5': '5年'
+    # 'm6': '6月',
+    # 'y1': '1年',
+    # 'y2': '2年',
+    # 数据量太大，暂时不分析
+    # 'y3': '3年',
+    # 'y4': '4年',
+    # 'y5': '5年'
 }
 
 TIME_FREQ_MAP = {
@@ -107,16 +108,16 @@ PRICE_CHANGE_CATEGORIES = {
 
 # 涨跌幅场景描述
 SCENARIO_DESCRIPTIONS = {
-    'micro_up': '今天微涨(涨幅<1%)，第二天概率情况',
-    'small_up': '今天小涨(涨幅<3%)，第二天概率情况',
-    'medium_up': '今天中涨(涨幅<5%)，第二天概率情况',
-    'large_up': '今天大涨(涨幅<7%)，第二天概率情况',
-    'limit_up': '今天涨停(涨幅>=7%)，第二天概率情况',
-    'flat': '今天平开(涨幅=0%)，第二天概率情况',
-    'small_down': '今天小跌(跌幅<-1%)，第二天概率情况',
-    'medium_down': '今天中跌(跌幅<-3%)，第二天概率情况',
-    'large_down': '今天大跌(跌幅<-5%)，第二天概率情况',
-    'limit_down': '今天跌停(跌幅<=-5%)，第二天概率情况',
+    'micro_up': '今天微涨(0 ~ 1%)，明天概率情况',
+    'small_up': '今天小涨(1% ~ 3%)，明天概率情况',
+    'medium_up': '今天中涨(3% ~ 5%)，明天概率情况',
+    'large_up': '今天大涨(7% ~ 涨停)，明天概率情况',
+    'limit_up': '今天涨停()涨停，明天概率情况',
+    'flat': '今天平开(涨幅=0%)  ，明天概率情况',
+    'small_down': '今天小跌(-1% ~ 0)，明天概率情况',
+    'medium_down': '今天中跌(-3% ~ -1%)，明天概率情况',
+    'large_down': '今天大跌(-5% ~ -3%)，明天概率情况',
+    'limit_down': '今天跌停(-5% ~ -7%)，明天概率情况',
     'range_1_3p': '今天1-3%，明天概率情况',
     'range_3_5p': '今天3-5%，明天概率情况',
     'range_5_7p': '今天5-7%，明天概率情况',
@@ -470,16 +471,15 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str) -> Dict[st
             result[category] = {
                 'auction': {'up': 0, 'down': 0, 'equal': 0, 'total': 0},
                 '1min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0},
-                '5min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0},
-                '15min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0},
-                '30min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0},
-                '60min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0}
+                '5min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0, 'max_pct': 0, 'min_pct': 0, 'close_pct': 0, 'max_pct_sum': 0, 'min_pct_sum': 0, 'close_pct_sum': 0},
+                '15min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0, 'max_pct': 0, 'min_pct': 0, 'close_pct': 0, 'max_pct_sum': 0, 'min_pct_sum': 0, 'close_pct_sum': 0},
+                '30min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0, 'max_pct': 0, 'min_pct': 0, 'close_pct': 0, 'max_pct_sum': 0, 'min_pct_sum': 0, 'close_pct_sum': 0},
+                '60min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0, 'max_pct': 0, 'min_pct': 0, 'close_pct': 0, 'max_pct_sum': 0, 'min_pct_sum': 0, 'close_pct_sum': 0}
             }
             
             # 遍历该分类的每一天
             iterrows = category_data.iterrows()
             iterrows_count = 0
-            start_time = time.time()
             
             for _, row in iterrows:
                 iterrows_count += 1
@@ -510,9 +510,7 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str) -> Dict[st
                     minute_data = minute_data_cache[time_key].get(next_trade_date, pd.DataFrame())
                     calculate_minutes_data(minute_data, category, time_key, result, row)
             
-            # 记录遍历耗时
-            logger.info("遍历该分类的每一天 当前category: %s, 共%s条记录, 时间周期: %s, 耗时: %s秒", 
-                        category, iterrows_count, time_period, time.time() - start_time)
+            
             
             # 计算概率
             for time_key in result[category]:
@@ -521,6 +519,12 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str) -> Dict[st
                     result[category][time_key]['up_prob'] = round(result[category][time_key]['up'] / total * 100, 2)
                     result[category][time_key]['down_prob'] = round(result[category][time_key]['down'] / total * 100, 2)
                     result[category][time_key]['equal_prob'] = round(result[category][time_key]['equal'] / total * 100, 2)
+                    
+                    # 计算平均涨跌幅（仅对非1min和非auction的数据）
+                    if time_key not in ['1min', 'auction'] and 'max_pct_sum' in result[category][time_key]:
+                        result[category][time_key]['max_pct'] = round(result[category][time_key]['max_pct_sum'] / total, 2)
+                        result[category][time_key]['min_pct'] = round(result[category][time_key]['min_pct_sum'] / total, 2)
+                        result[category][time_key]['close_pct'] = round(result[category][time_key]['close_pct_sum'] / total, 2)
         
         return result
     except Exception as e:
@@ -531,17 +535,40 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str) -> Dict[st
 def calculate_minutes_data(minute_data: pd.DataFrame, category: str, time_key: str, result: Dict[str, Dict[str, Dict[str, float]]], row: pd.Series) -> pd.DataFrame:
     """计算分钟数据"""
     try:
-        if not minute_data.empty:              
+        if not minute_data.empty:   
+            max_price = minute_data['high'].max()
+            min_price = minute_data['low'].min()
+            
             # 计算1分钟数据的涨跌, 取最后一条数据
             # 如果是1min 则取第一条
             if time_key == '1min':
                 minute_close = minute_data['close'].iloc[0]
             else:
                 minute_close = minute_data['close'].iloc[-1]
+                # 对于非1min的数据，计算最大涨幅、最小涨幅和收盘涨幅
+                prev_close = row['close']
+                
+                # 计算最大涨幅（使用high列的最大值）
+              
+                max_pct_change = (max_price - prev_close) / prev_close * 100
+                
+                # 计算最小涨幅（使用low列的最小值）
+               
+                min_pct_change = (min_price - prev_close) / prev_close * 100
+                
+                # 计算收盘涨幅
+                close_pct_change = (minute_close - prev_close) / prev_close * 100
+                
+                # 累加涨跌幅，用于后续计算平均值
+                result[category][time_key]['max_pct_sum'] =  max(result[category][time_key]['max_pct_sum'], max_pct_change)
+                result[category][time_key]['min_pct_sum'] =  min(result[category][time_key]['min_pct_sum'], min_pct_change)
+                result[category][time_key]['close_pct_sum'] = max(result[category][time_key]['close_pct_sum'], close_pct_change)
+
             prev_close = row['close']
             
             if minute_close > prev_close:
                 result[category][time_key]['up'] += 1
+               
             elif minute_close < prev_close:
                 result[category][time_key]['down'] += 1
             else:
@@ -568,13 +595,23 @@ def save_probability_to_csv(ts_code: str, probability_data: Dict[str, Dict[str, 
             for time_key, prob_data in time_data.items():
                 row = {
                     '当日涨幅': LIST_RANGE_MAP.get(category, category),
-                    '场景描述': SCENARIO_DESCRIPTIONS.get(category, f"今天{category}，第二天概率情况"),
+                    '场景描述': SCENARIO_DESCRIPTIONS.get(category, f"今天{category}，明天概率情况"),
                     '时间段': TIME_FREQ_MAP.get(time_key, time_key),
                     '涨概率': prob_data.get('up_prob', 0),
                     '跌概率': prob_data.get('down_prob', 0),
                     '平概率': prob_data.get('equal_prob', 0),
-                    '样本数': prob_data.get('total', 0)
+                 
                 }
+                
+                # 添加最大涨幅、最小涨幅和收盘涨幅的统计项（仅对非1min和非auction的数据）
+                if time_key not in ['1min', 'auction'] and 'max_pct' in prob_data:
+                    row.update({
+                        '最大涨幅': prob_data.get('max_pct', 0),
+                        '最小涨幅': prob_data.get('min_pct', 0),
+                        '收盘涨幅': prob_data.get('close_pct', 0),
+                        '样本数': prob_data.get('total', 0)
+                    })
+                
                 rows.append(row)
         
         # 创建DataFrame并保存
@@ -625,6 +662,9 @@ def analyze_stock(ts_code: str) -> Dict[str, Any]:
                                 'up_prob': row['涨概率'],
                                 'down_prob': row['跌概率'],
                                 'equal_prob': row['平概率'],
+                                'max_pct': row['最大涨幅'],
+                                'min_pct': row['最小涨幅'],
+                                'close_pct': row['收盘涨幅'],
                                 'total': row['样本数']
                             }
                     
