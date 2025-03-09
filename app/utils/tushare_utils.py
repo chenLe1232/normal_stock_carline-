@@ -152,7 +152,7 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
         filtered_stocks = filtered_stocks[~filtered_stocks['ts_code'].str.startswith('688')]
         logger.info("排除科创板后，剩余%s条记录", len(filtered_stocks))
         # 排除 st *st *st
-        filtered_stocks = filtered_stocks[~filtered_stocks['ts_code'].str.contains('ST')]
+        filtered_stocks = filtered_stocks[~filtered_stocks['name'].str.contains('ST')]
         logger.info("排除ST后，剩余%s条记录", len(filtered_stocks))
         
         # 获取最新交易日期
@@ -221,8 +221,8 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
                     logger.info("已将合并后的数据保存到data/merged_stocks.csv，共%s条记录", len(merged_df))
                     
                     # 过滤市值在10 * 10000到5000 * 10000 之间的股票单位 万元 10亿到 300亿
-                    low_mv = 10 * 10000
-                    high_mv = 180 * 10000
+                    low_mv = 30 * 10000
+                    high_mv = 222 * 10000
                     # 注意：total_mv和circ_mv单位为万元，需要转换
                     # 只有在市值数据不为空的情况下才进行过滤
                     if 'total_mv' in merged_df.columns and not merged_df['total_mv'].isna().all():
@@ -240,8 +240,20 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
                         
                         # 保存被过滤掉的数据
                         filtered_out = merged_df[~merged_df.index.isin(result.index)]
-                        # filtered_out.to_csv('data/filtered_out.csv', index=False, encoding='utf-8-sig')
-                        logger.info("被过滤掉的记录已保存到data/filtered_out.csv，共%s条记录", len(filtered_out))
+                        filtered_out.to_csv('data/市值小于30亿或者大于222亿之间的股票.csv', index=False, encoding='utf-8-sig')
+                        logger.info("被过滤掉的记录已保存到data/市值小于30亿或者大于222亿之间的股票.csv，共%s条记录", len(filtered_out))
+                        # 过滤流通性 保留流通市值/总市值 > 0.7 小于的 则过滤掉
+                        result = result[result['circ_mv'] / result['total_mv'] > 0.7]
+                        logger.info("过滤流通性后，剩余%s条记录", len(result))
+                        # 保存过滤后的数据
+                        result.to_csv('data/市值30亿_222亿之间流通性大于70%的股票.csv', index=False, encoding='utf-8-sig')
+                        logger.info("过滤后数据已保存到data/市值30亿_222亿之间流通性大于70%的股票.csv，共%s条记录", len(result))
+                        # 过滤掉特定股票 比如 负面新闻
+                        bad_ts_codes = ["600811.SH"]
+                        # 存在于 bad_ts_codes 的 则过滤掉
+                        result = result[~result['ts_code'].isin(bad_ts_codes)]
+                        logger.info("过滤特定股票后，剩余%s条记录", len(result))
+                       
                     else:
                         logger.warning("市值数据为空，无法进行市值过滤")
                         result = merged_df
@@ -620,15 +632,6 @@ def save_probability_to_csv(ts_code: str, probability_data: Dict[str, Dict[str, 
                     '成交量占比': prob_data.get('volume_ratio', 0),
                     '样本数': prob_data.get('total', 0),
                 }
-                
-                # # 添加最大涨幅、最小涨幅和收盘涨幅的统计项（仅对非1min和非auction的数据）
-                # if time_key not in ['1min', 'auction'] and 'max_pct' in prob_data:
-                #     row.update({
-                #         '最大涨幅': prob_data.get('max_pct', 0),
-                #         '最小涨幅': prob_data.get('min_pct', 0),
-                #         '收盘涨幅': prob_data.get('close_pct', 0),                  
-                       
-                #     })
                 
                 rows.append(row)
         

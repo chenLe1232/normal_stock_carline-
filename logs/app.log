@@ -4692,3 +4692,112 @@
 2025-03-09 12:25:34,033 - app.utils.tushare_utils - INFO - 概率数据已保存到./data/600192.SH_m1_probability.csv
 2025-03-09 12:25:34,033 - app.utils.tushare_utils - INFO - 分析股票600192.SH m1 耗时: 7.140841007232666秒
 2025-03-09 12:25:34,329 - app.utils.tushare_utils - INFO - 获取股票600192.SH日线数据成功，共2472条记录
+2025-03-09 12:35:26,353 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 12:35:32,830 - app.utils.tushare_utils - INFO - 获取股票列表成功，共5395条记录
+2025-03-09 12:35:32,830 - app.utils.tushare_utils - INFO - 排除北交所股票后，剩余5131条记录
+2025-03-09 12:35:32,831 - app.utils.tushare_utils - INFO - 排除科创板后，剩余4547条记录
+2025-03-09 12:35:32,832 - app.utils.tushare_utils - INFO - 排除ST后，剩余4421条记录
+2025-03-09 12:35:33,039 - app.utils.tushare_utils - INFO - 尝试获取第1批股票的市值数据，共1000只股票
+2025-03-09 12:35:33,194 - app.utils.tushare_utils - INFO - 成功获取第1批股票的市值数据，共999条记录
+2025-03-09 12:35:33,207 - app.utils.tushare_utils - INFO - 尝试获取第2批股票的市值数据，共1000只股票
+2025-03-09 12:35:33,346 - app.utils.tushare_utils - INFO - 成功获取第2批股票的市值数据，共999条记录
+2025-03-09 12:35:33,359 - app.utils.tushare_utils - INFO - 尝试获取第3批股票的市值数据，共1000只股票
+2025-03-09 12:35:33,504 - app.utils.tushare_utils - INFO - 成功获取第3批股票的市值数据，共997条记录
+2025-03-09 12:35:33,516 - app.utils.tushare_utils - INFO - 尝试获取第4批股票的市值数据，共1000只股票
+2025-03-09 12:35:33,664 - app.utils.tushare_utils - INFO - 成功获取第4批股票的市值数据，共999条记录
+2025-03-09 12:35:33,677 - app.utils.tushare_utils - INFO - 尝试获取第5批股票的市值数据，共421只股票
+2025-03-09 12:35:33,765 - app.utils.tushare_utils - INFO - 成功获取第5批股票的市值数据，共421条记录
+2025-03-09 12:35:33,779 - app.utils.tushare_utils - INFO - 已将合并后的数据保存到data/merged_stocks.csv，共4421条记录
+2025-03-09 12:35:33,779 - app.utils.tushare_utils - INFO - 过滤市值后，剩余2949条记录
+2025-03-09 12:35:33,780 - app.utils.tushare_utils - INFO - 被过滤掉的记录已保存到data/filtered_out.csv，共1472条记录
+2025-03-09 12:35:33,780 - app.utils.tushare_utils - INFO - 过滤流通性后，剩余2366条记录
+2025-03-09 12:35:33,780 - app.utils.tushare_utils - INFO - 最终返回2366条股票记录
+2025-03-09 12:37:40,287 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 12:38:01,698 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 12:38:23,642 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 12:38:36,361 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 12:38:53,830 - app.utils.tushare_utils - INFO - 获取股票列表成功，共5395条记录
+2025-03-09 12:38:53,831 - app.utils.tushare_utils - INFO - 排除北交所股票后，剩余5131条记录
+2025-03-09 12:38:53,832 - app.utils.tushare_utils - INFO - 排除科创板后，剩余4547条记录
+2025-03-09 12:38:53,833 - app.utils.tushare_utils - INFO - 排除ST后，剩余4421条记录
+2025-03-09 12:38:54,049 - app.utils.tushare_utils - INFO - 尝试获取第1批股票的市值数据，共1000只股票
+2025-03-09 12:38:54,188 - app.utils.tushare_utils - INFO - 成功获取第1批股票的市值数据，共999条记录
+2025-03-09 12:38:54,200 - app.utils.tushare_utils - INFO - 尝试获取第2批股票的市值数据，共1000只股票
+2025-03-09 12:38:54,363 - app.utils.tushare_utils - INFO - 成功获取第2批股票的市值数据，共999条记录
+2025-03-09 12:38:54,376 - app.utils.tushare_utils - INFO - 尝试获取第3批股票的市值数据，共1000只股票
+2025-03-09 12:38:54,538 - app.utils.tushare_utils - INFO - 成功获取第3批股票的市值数据，共997条记录
+2025-03-09 12:38:54,551 - app.utils.tushare_utils - INFO - 尝试获取第4批股票的市值数据，共1000只股票
+2025-03-09 12:38:54,686 - app.utils.tushare_utils - INFO - 成功获取第4批股票的市值数据，共999条记录
+2025-03-09 12:38:54,698 - app.utils.tushare_utils - INFO - 尝试获取第5批股票的市值数据，共421只股票
+2025-03-09 12:38:54,795 - app.utils.tushare_utils - INFO - 成功获取第5批股票的市值数据，共421条记录
+2025-03-09 12:38:54,810 - app.utils.tushare_utils - INFO - 已将合并后的数据保存到data/merged_stocks.csv，共4421条记录
+2025-03-09 12:38:54,811 - app.utils.tushare_utils - INFO - 过滤市值后，剩余2949条记录
+2025-03-09 12:38:54,829 - app.utils.tushare_utils - INFO - 被过滤掉的记录已保存到data/市值小于30亿或者大于222亿之间的股票.csv，共1472条记录
+2025-03-09 12:38:54,829 - app.utils.tushare_utils - INFO - 过滤流通性后，剩余583条记录
+2025-03-09 12:38:54,843 - app.utils.tushare_utils - INFO - 最终返回583条股票记录
+2025-03-09 12:40:12,501 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 12:40:17,752 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 12:40:21,746 - app.utils.tushare_utils - INFO - 获取股票列表成功，共5395条记录
+2025-03-09 12:40:21,748 - app.utils.tushare_utils - INFO - 排除北交所股票后，剩余5131条记录
+2025-03-09 12:40:21,748 - app.utils.tushare_utils - INFO - 排除科创板后，剩余4547条记录
+2025-03-09 12:40:21,749 - app.utils.tushare_utils - INFO - 排除ST后，剩余4421条记录
+2025-03-09 12:40:21,962 - app.utils.tushare_utils - INFO - 尝试获取第1批股票的市值数据，共1000只股票
+2025-03-09 12:40:22,099 - app.utils.tushare_utils - INFO - 成功获取第1批股票的市值数据，共999条记录
+2025-03-09 12:40:22,112 - app.utils.tushare_utils - INFO - 尝试获取第2批股票的市值数据，共1000只股票
+2025-03-09 12:40:22,270 - app.utils.tushare_utils - INFO - 成功获取第2批股票的市值数据，共999条记录
+2025-03-09 12:40:22,283 - app.utils.tushare_utils - INFO - 尝试获取第3批股票的市值数据，共1000只股票
+2025-03-09 12:40:22,429 - app.utils.tushare_utils - INFO - 成功获取第3批股票的市值数据，共997条记录
+2025-03-09 12:40:22,441 - app.utils.tushare_utils - INFO - 尝试获取第4批股票的市值数据，共1000只股票
+2025-03-09 12:40:22,600 - app.utils.tushare_utils - INFO - 成功获取第4批股票的市值数据，共999条记录
+2025-03-09 12:40:22,612 - app.utils.tushare_utils - INFO - 尝试获取第5批股票的市值数据，共421只股票
+2025-03-09 12:40:22,694 - app.utils.tushare_utils - INFO - 成功获取第5批股票的市值数据，共421条记录
+2025-03-09 12:40:22,710 - app.utils.tushare_utils - INFO - 已将合并后的数据保存到data/merged_stocks.csv，共4421条记录
+2025-03-09 12:40:22,711 - app.utils.tushare_utils - INFO - 过滤市值后，剩余2949条记录
+2025-03-09 12:40:22,729 - app.utils.tushare_utils - INFO - 被过滤掉的记录已保存到data/市值小于30亿或者大于222亿之间的股票.csv，共1472条记录
+2025-03-09 12:40:22,730 - app.utils.tushare_utils - INFO - 过滤流通性后，剩余2366条记录
+2025-03-09 12:40:22,758 - app.utils.tushare_utils - INFO - 最终返回2366条股票记录
+2025-03-09 12:44:13,135 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 12:44:21,092 - app.utils.tushare_utils - INFO - 获取股票列表成功，共5395条记录
+2025-03-09 12:44:21,104 - app.utils.tushare_utils - INFO - 排除北交所股票后，剩余5131条记录
+2025-03-09 12:44:21,106 - app.utils.tushare_utils - INFO - 排除科创板后，剩余4547条记录
+2025-03-09 12:44:21,107 - app.utils.tushare_utils - INFO - 排除ST后，剩余4421条记录
+2025-03-09 12:44:21,318 - app.utils.tushare_utils - INFO - 尝试获取第1批股票的市值数据，共1000只股票
+2025-03-09 12:44:21,487 - app.utils.tushare_utils - INFO - 成功获取第1批股票的市值数据，共999条记录
+2025-03-09 12:44:21,500 - app.utils.tushare_utils - INFO - 尝试获取第2批股票的市值数据，共1000只股票
+2025-03-09 12:44:21,643 - app.utils.tushare_utils - INFO - 成功获取第2批股票的市值数据，共999条记录
+2025-03-09 12:44:21,656 - app.utils.tushare_utils - INFO - 尝试获取第3批股票的市值数据，共1000只股票
+2025-03-09 12:44:21,813 - app.utils.tushare_utils - INFO - 成功获取第3批股票的市值数据，共997条记录
+2025-03-09 12:44:21,826 - app.utils.tushare_utils - INFO - 尝试获取第4批股票的市值数据，共1000只股票
+2025-03-09 12:44:21,986 - app.utils.tushare_utils - INFO - 成功获取第4批股票的市值数据，共999条记录
+2025-03-09 12:44:21,996 - app.utils.tushare_utils - INFO - 尝试获取第5批股票的市值数据，共421只股票
+2025-03-09 12:44:22,091 - app.utils.tushare_utils - INFO - 成功获取第5批股票的市值数据，共421条记录
+2025-03-09 12:44:22,105 - app.utils.tushare_utils - INFO - 已将合并后的数据保存到data/merged_stocks.csv，共4421条记录
+2025-03-09 12:44:22,106 - app.utils.tushare_utils - INFO - 过滤市值后，剩余2949条记录
+2025-03-09 12:44:22,116 - app.utils.tushare_utils - INFO - 被过滤掉的记录已保存到data/市值小于30亿或者大于222亿之间的股票.csv，共1472条记录
+2025-03-09 12:44:22,116 - app.utils.tushare_utils - INFO - 过滤流通性后，剩余2366条记录
+2025-03-09 12:44:22,136 - app.utils.tushare_utils - INFO - 过滤特定股票后，剩余2365条记录
+2025-03-09 12:44:22,150 - app.utils.tushare_utils - INFO - 最终返回2365条股票记录
+2025-03-09 12:46:36,499 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 12:47:16,520 - app.utils.tushare_utils - INFO - 获取股票002076.SZ日线数据成功，共2220条记录
+2025-03-09 12:47:16,522 - app.utils.tushare_utils - INFO - 预先批量获取竞价和分钟数据，共22个交易日
+2025-03-09 12:47:16,522 - app.utils.tushare_utils - INFO - 批量获取竞价数据，批次1/1，共22个交易日
+2025-03-09 12:47:17,956 - app.utils.tushare_utils - INFO - 批量获取竞价数据完成，耗时: 1.4338359832763672秒
+2025-03-09 12:47:17,956 - app.utils.tushare_utils - INFO - 开始获取1min分钟数据
+2025-03-09 12:47:17,956 - app.utils.tushare_utils - INFO - 批量获取1min分钟数据，批次1/1，共22个交易日
+2025-03-09 12:47:19,173 - app.utils.tushare_utils - INFO - 开始获取5min分钟数据
+2025-03-09 12:47:19,173 - app.utils.tushare_utils - INFO - 批量获取5min分钟数据，批次1/1，共22个交易日
+2025-03-09 12:47:20,381 - app.utils.tushare_utils - INFO - 开始获取15min分钟数据
+2025-03-09 12:47:20,381 - app.utils.tushare_utils - INFO - 批量获取15min分钟数据，批次1/1，共22个交易日
+2025-03-09 12:47:21,606 - app.utils.tushare_utils - INFO - 开始获取30min分钟数据
+2025-03-09 12:47:21,606 - app.utils.tushare_utils - INFO - 批量获取30min分钟数据，批次1/1，共22个交易日
+2025-03-09 12:47:23,522 - app.utils.tushare_utils - INFO - 开始获取60min分钟数据
+2025-03-09 12:47:23,523 - app.utils.tushare_utils - INFO - 批量获取60min分钟数据，批次1/1，共22个交易日
+2025-03-09 12:47:25,569 - app.utils.tushare_utils - INFO - 批量获取分钟数据完成，耗时: 7.613024950027466秒
+2025-03-09 12:47:25,569 - app.utils.tushare_utils - INFO - 竞价数据获取情况: 共22/22个交易日有数据
+2025-03-09 12:47:25,569 - app.utils.tushare_utils - INFO - 1min数据获取情况: 共22/22个交易日有数据
+2025-03-09 12:47:25,569 - app.utils.tushare_utils - INFO - 5min数据获取情况: 共22/22个交易日有数据
+2025-03-09 12:47:25,570 - app.utils.tushare_utils - INFO - 15min数据获取情况: 共22/22个交易日有数据
+2025-03-09 12:47:25,570 - app.utils.tushare_utils - INFO - 30min数据获取情况: 共22/22个交易日有数据
+2025-03-09 12:47:25,570 - app.utils.tushare_utils - INFO - 60min数据获取情况: 共22/22个交易日有数据
+2025-03-09 12:47:25,592 - app.utils.tushare_utils - INFO - 概率数据已保存到./data/002076.SZ_m1_probability.csv
+2025-03-09 12:47:25,592 - app.utils.tushare_utils - INFO - 分析股票002076.SZ m1 耗时: 9.072058200836182秒
