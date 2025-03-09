@@ -4801,3 +4801,85 @@
 2025-03-09 12:47:25,570 - app.utils.tushare_utils - INFO - 60min数据获取情况: 共22/22个交易日有数据
 2025-03-09 12:47:25,592 - app.utils.tushare_utils - INFO - 概率数据已保存到./data/002076.SZ_m1_probability.csv
 2025-03-09 12:47:25,592 - app.utils.tushare_utils - INFO - 分析股票002076.SZ m1 耗时: 9.072058200836182秒
+2025-03-09 12:59:25,072 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 12:59:25,384 - app.utils.tushare_utils - INFO - Tushare API初始化成功
+2025-03-09 12:59:36,763 - app.utils.tushare_utils - INFO - 获取股票列表成功，共5395条记录
+2025-03-09 12:59:36,766 - app.utils.tushare_utils - INFO - 排除北交所股票后，剩余5131条记录
+2025-03-09 12:59:36,770 - app.utils.tushare_utils - INFO - 排除科创板后，剩余4547条记录
+2025-03-09 12:59:36,770 - app.utils.tushare_utils - INFO - 排除ST后，剩余4421条记录
+2025-03-09 12:59:37,038 - app.utils.tushare_utils - INFO - 尝试获取第1批股票的市值数据，共1000只股票
+2025-03-09 12:59:37,179 - app.utils.tushare_utils - INFO - 成功获取第1批股票的市值数据，共999条记录
+2025-03-09 12:59:37,191 - app.utils.tushare_utils - INFO - 尝试获取第2批股票的市值数据，共1000只股票
+2025-03-09 12:59:37,329 - app.utils.tushare_utils - INFO - 成功获取第2批股票的市值数据，共999条记录
+2025-03-09 12:59:37,342 - app.utils.tushare_utils - INFO - 尝试获取第3批股票的市值数据，共1000只股票
+2025-03-09 12:59:37,553 - app.utils.tushare_utils - INFO - 成功获取第3批股票的市值数据，共997条记录
+2025-03-09 12:59:37,565 - app.utils.tushare_utils - INFO - 尝试获取第4批股票的市值数据，共1000只股票
+2025-03-09 12:59:37,690 - app.utils.tushare_utils - INFO - 成功获取第4批股票的市值数据，共999条记录
+2025-03-09 12:59:37,701 - app.utils.tushare_utils - INFO - 尝试获取第5批股票的市值数据，共421只股票
+2025-03-09 12:59:37,787 - app.utils.tushare_utils - INFO - 成功获取第5批股票的市值数据，共421条记录
+2025-03-09 12:59:37,802 - app.utils.tushare_utils - INFO - 已将合并后的数据保存到data/merged_stocks.csv，共4421条记录
+2025-03-09 12:59:37,803 - app.utils.tushare_utils - INFO - 过滤市值后，剩余2949条记录
+2025-03-09 12:59:37,822 - app.utils.tushare_utils - INFO - 被过滤掉的记录已保存到data/市值小于30亿或者大于222亿之间的股票.csv，共1472条记录
+2025-03-09 12:59:37,823 - app.utils.tushare_utils - INFO - 过滤流通性后，剩余2366条记录
+2025-03-09 12:59:37,850 - app.utils.tushare_utils - INFO - 过滤特定股票后，剩余2365条记录
+2025-03-09 12:59:37,850 - app.utils.tushare_utils - INFO - 最终返回2365条股票记录
+2025-03-09 13:00:50,676 - app.utils.tushare_utils - INFO - 获取股票000006.SZ日线数据成功，共2355条记录
+2025-03-09 13:00:50,681 - app.utils.tushare_utils - INFO - 预先批量获取竞价和分钟数据，共22个交易日
+2025-03-09 13:00:50,681 - app.utils.tushare_utils - INFO - 批量获取竞价数据，批次1/1，共22个交易日
+2025-03-09 13:00:52,069 - app.utils.tushare_utils - INFO - 批量获取竞价数据完成，耗时: 1.388504981994629秒
+2025-03-09 13:00:52,069 - app.utils.tushare_utils - INFO - 开始获取1min分钟数据
+2025-03-09 13:00:52,069 - app.utils.tushare_utils - INFO - 批量获取1min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:00:53,256 - app.utils.tushare_utils - INFO - 开始获取5min分钟数据
+2025-03-09 13:00:53,256 - app.utils.tushare_utils - INFO - 批量获取5min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:00:54,441 - app.utils.tushare_utils - INFO - 开始获取15min分钟数据
+2025-03-09 13:00:54,442 - app.utils.tushare_utils - INFO - 批量获取15min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:00:55,692 - app.utils.tushare_utils - INFO - 开始获取30min分钟数据
+2025-03-09 13:00:55,693 - app.utils.tushare_utils - INFO - 批量获取30min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:00:56,883 - app.utils.tushare_utils - INFO - 开始获取60min分钟数据
+2025-03-09 13:00:56,883 - app.utils.tushare_utils - INFO - 批量获取60min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:00:58,158 - app.utils.tushare_utils - INFO - 批量获取分钟数据完成，耗时: 6.0886242389678955秒
+2025-03-09 13:00:58,158 - app.utils.tushare_utils - INFO - 竞价数据获取情况: 共22/22个交易日有数据
+2025-03-09 13:00:58,158 - app.utils.tushare_utils - INFO - 1min数据获取情况: 共22/22个交易日有数据
+2025-03-09 13:00:58,158 - app.utils.tushare_utils - INFO - 5min数据获取情况: 共22/22个交易日有数据
+2025-03-09 13:00:58,159 - app.utils.tushare_utils - INFO - 15min数据获取情况: 共22/22个交易日有数据
+2025-03-09 13:00:58,159 - app.utils.tushare_utils - INFO - 30min数据获取情况: 共22/22个交易日有数据
+2025-03-09 13:00:58,159 - app.utils.tushare_utils - INFO - 60min数据获取情况: 共22/22个交易日有数据
+2025-03-09 13:00:58,178 - app.utils.tushare_utils - INFO - 概率数据已保存到./data/000006.SZ_m1_probability.csv
+2025-03-09 13:00:58,178 - app.utils.tushare_utils - INFO - 分析股票000006.SZ m1 耗时: 7.50081729888916秒
+2025-03-09 13:00:58,456 - app.utils.tushare_utils - INFO - 获取股票000008.SZ日线数据成功，共2316条记录
+2025-03-09 13:00:58,457 - app.utils.tushare_utils - INFO - 预先批量获取竞价和分钟数据，共22个交易日
+2025-03-09 13:00:58,457 - app.utils.tushare_utils - INFO - 批量获取竞价数据，批次1/1，共22个交易日
+2025-03-09 13:00:59,972 - app.utils.tushare_utils - INFO - 批量获取竞价数据完成，耗时: 1.5150220394134521秒
+2025-03-09 13:00:59,972 - app.utils.tushare_utils - INFO - 开始获取1min分钟数据
+2025-03-09 13:00:59,972 - app.utils.tushare_utils - INFO - 批量获取1min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:01:01,158 - app.utils.tushare_utils - INFO - 开始获取5min分钟数据
+2025-03-09 13:01:01,159 - app.utils.tushare_utils - INFO - 批量获取5min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:01:02,450 - app.utils.tushare_utils - INFO - 开始获取15min分钟数据
+2025-03-09 13:01:02,450 - app.utils.tushare_utils - INFO - 批量获取15min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:01:03,661 - app.utils.tushare_utils - INFO - 开始获取30min分钟数据
+2025-03-09 13:01:03,661 - app.utils.tushare_utils - INFO - 批量获取30min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:01:04,873 - app.utils.tushare_utils - INFO - 开始获取60min分钟数据
+2025-03-09 13:01:04,873 - app.utils.tushare_utils - INFO - 批量获取60min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:01:06,120 - app.utils.tushare_utils - INFO - 批量获取分钟数据完成，耗时: 6.147337913513184秒
+2025-03-09 13:01:06,120 - app.utils.tushare_utils - INFO - 竞价数据获取情况: 共22/22个交易日有数据
+2025-03-09 13:01:06,120 - app.utils.tushare_utils - INFO - 1min数据获取情况: 共22/22个交易日有数据
+2025-03-09 13:01:06,120 - app.utils.tushare_utils - INFO - 5min数据获取情况: 共22/22个交易日有数据
+2025-03-09 13:01:06,120 - app.utils.tushare_utils - INFO - 15min数据获取情况: 共22/22个交易日有数据
+2025-03-09 13:01:06,120 - app.utils.tushare_utils - INFO - 30min数据获取情况: 共22/22个交易日有数据
+2025-03-09 13:01:06,120 - app.utils.tushare_utils - INFO - 60min数据获取情况: 共22/22个交易日有数据
+2025-03-09 13:01:06,134 - app.utils.tushare_utils - INFO - 概率数据已保存到./data/000008.SZ_m1_probability.csv
+2025-03-09 13:01:06,134 - app.utils.tushare_utils - INFO - 分析股票000008.SZ m1 耗时: 7.677994012832642秒
+2025-03-09 13:01:06,437 - app.utils.tushare_utils - INFO - 获取股票000009.SZ日线数据成功，共2440条记录
+2025-03-09 13:01:06,438 - app.utils.tushare_utils - INFO - 预先批量获取竞价和分钟数据，共22个交易日
+2025-03-09 13:01:06,438 - app.utils.tushare_utils - INFO - 批量获取竞价数据，批次1/1，共22个交易日
+2025-03-09 13:01:07,790 - app.utils.tushare_utils - INFO - 批量获取竞价数据完成，耗时: 1.352388858795166秒
+2025-03-09 13:01:07,791 - app.utils.tushare_utils - INFO - 开始获取1min分钟数据
+2025-03-09 13:01:07,791 - app.utils.tushare_utils - INFO - 批量获取1min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:01:09,535 - app.utils.tushare_utils - INFO - 开始获取5min分钟数据
+2025-03-09 13:01:09,535 - app.utils.tushare_utils - INFO - 批量获取5min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:01:11,614 - app.utils.tushare_utils - INFO - 开始获取15min分钟数据
+2025-03-09 13:01:11,614 - app.utils.tushare_utils - INFO - 批量获取15min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:01:13,186 - app.utils.tushare_utils - INFO - 开始获取30min分钟数据
+2025-03-09 13:01:13,186 - app.utils.tushare_utils - INFO - 批量获取30min分钟数据，批次1/1，共22个交易日
+2025-03-09 13:01:14,420 - app.utils.tushare_utils - INFO - 开始获取60min分钟数据
+2025-03-09 13:01:14,420 - app.utils.tushare_utils - INFO - 批量获取60min分钟数据，批次1/1，共22个交易日
