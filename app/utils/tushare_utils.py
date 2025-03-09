@@ -317,9 +317,9 @@ def categorize_pct_change(pct_chg: float) -> str:
     elif -3 < pct_chg <= -1:
         return 'medium_down'
     elif -5 < pct_chg <= -3:
-        return 'large_down'
-    else:  # pct_chg <= -5
         return 'limit_down'
+    else:  # pct_chg <= -5
+        return 'large_down'
 
 def get_auction_data(ts_code: str, trade_date: str) -> pd.DataFrame:
     """获取股票竞价数据"""
@@ -342,25 +342,76 @@ def get_minutes_data(ts_code: str, trade_date: str, freq: int = 1) -> pd.DataFra
         # 转换日期格式
         date_obj = datetime.datetime.strptime(trade_date, '%Y%m%d')
         start_time = f"{date_obj.strftime('%Y-%m-%d')} 09:30:00"
-        end_time = '';
-        if freq == 1:
-            end_time = f"{date_obj.strftime('%Y-%m-%d')} 09:30:00"
-        elif freq == 5:
-            start_time = f"{date_obj.strftime('%Y-%m-%d')} 09:30:00"
-            end_time = f"{date_obj.strftime('%Y-%m-%d')} 09:35:00"
-        elif freq == 15:
-            start_time = f"{date_obj.strftime('%Y-%m-%d')} 09:35:00"
-            end_time = f"{date_obj.strftime('%Y-%m-%d')} 09:45:00"
-        elif freq == 30:
-            start_time = f"{date_obj.strftime('%Y-%m-%d')} 09:45:00"
-            end_time = f"{date_obj.strftime('%Y-%m-%d')} 10:15:00"
-        elif freq == 60:
-            start_time = f"{date_obj.strftime('%Y-%m-%d')} 10:15:00"
-            end_time = f"{date_obj.strftime('%Y-%m-%d')} 11:30:00"
+        end_time = f"{date_obj.strftime('%Y-%m-%d')} 11:00:00"
+        
+        # 一次性请求整个交易日的分钟数据
         minute_data = pro.stk_mins(ts_code=ts_code, freq='1min', start_date=start_time, end_date=end_time)
         return minute_data
     except Exception as e:
         logger.error("获取股票%s分钟行情数据失败: %s", ts_code, e)
+        return pd.DataFrame()
+
+def process_minutes_data(full_minute_data: pd.DataFrame, freq: str) -> pd.DataFrame:
+    """根据不同的时间频率处理分钟数据
+    
+    Args:
+        full_minute_data: 完整的分钟数据
+        freq: 时间频率，如'1min', '5min', '15min', '30min', '60min'
+    
+    Returns:
+        处理后的特定时间段的数据
+    """
+    if full_minute_data.empty:
+        return pd.DataFrame()
+    
+    try:
+        # 确保数据按时间排序（从早到晚）
+        full_minute_data = full_minute_data.sort_values(by='trade_time', ascending=True)
+        
+        # 将trade_time列转换为datetime对象
+        full_minute_data['trade_time'] = pd.to_datetime(full_minute_data['trade_time'])
+        
+        # 获取第一条记录的时间
+        first_time = full_minute_data['trade_time'].iloc[0]
+        
+        # 根据不同的时间频率截取数据
+        if freq == '1min':
+            # 只取第一分钟的数据
+            return full_minute_data.head(1)
+        elif freq == '5min':
+            # 取前5分钟的数据 (09:30:00 - 09:35:00)
+            end_time = datetime.datetime(
+                first_time.year, first_time.month, first_time.day,
+                first_time.hour, 35, 0
+            )
+            return full_minute_data[full_minute_data['trade_time'] <= end_time]
+        elif freq == '15min':
+            # 取前15分钟的数据 (09:30:00 - 09:45:00)
+            end_time = datetime.datetime(
+                first_time.year, first_time.month, first_time.day,
+                first_time.hour, 45, 0
+            )
+            return full_minute_data[full_minute_data['trade_time'] <= end_time]
+        elif freq == '30min':
+            # 取前30分钟的数据 (09:30:00 - 10:00:00)
+            end_time = datetime.datetime(
+                first_time.year, first_time.month, first_time.day,
+                10, 0, 0
+            )
+            return full_minute_data[full_minute_data['trade_time'] <= end_time]
+        elif freq == '60min':
+            # 取前60分钟的数据 (09:30:00 - 10:30:00)
+            end_time = datetime.datetime(
+                first_time.year, first_time.month, first_time.day,
+                10, 30, 0
+            )
+            return full_minute_data[full_minute_data['trade_time'] <= end_time]
+        else:
+            logger.warning("不支持的时间频率: %s", freq)
+            return pd.DataFrame()
+    except Exception as e:
+        logger.error("处理%s分钟数据失败: %s", freq, e)
+        traceback.print_exc()  # 添加详细的错误跟踪
         return pd.DataFrame()
 
 def calculate_probability(stock_data: pd.DataFrame, time_period: str, circ_mv: float) -> Dict[str, Dict[str, Dict[str, float]]]:
@@ -387,7 +438,6 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str, circ_mv: f
         else:
             logger.error("不支持的时间周期: %s", time_period)
             return {}
-        
         period_data = stock_data[stock_data['trade_date'] >= start_date].copy()
         
         if period_data.empty:
@@ -396,9 +446,8 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str, circ_mv: f
         
         # 按涨跌幅分类
         period_data['pct_chg_category'] = period_data['pct_chg'].apply(categorize_pct_change)
-        
-        # 计算第二天的数据
-        period_data['next_trade_date'] = period_data['trade_date'].shift(-1)
+        # 计算第2 个交易日的数据
+        period_data['next_trade_date'] = period_data['trade_date'].shift(1)
         
         # 初始化结果字典
         result = {}
@@ -406,6 +455,7 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str, circ_mv: f
         # 获取唯一的交易日期和股票代码
         next_trade_dates = period_data['next_trade_date'].dropna().unique()
         ts_code = period_data['ts_code'].iloc[0]  # 假设所有行的ts_code都相同
+       
         
         logger.info("预先批量获取竞价和分钟数据，共%s个交易日", len(next_trade_dates))
         
@@ -446,27 +496,31 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str, circ_mv: f
         
         # 批量获取分钟数据
         batch_start_time = time.time()
-        for freq, time_key in [(1, '1min'), (5, '5min'), (15, '15min'), (30, '30min'), (60, '60min')]:
-            logger.info("开始获取%s分钟数据", time_key)
+        logger.info("开始批量获取分钟数据")
+
+        for i in range(0, len(next_trade_dates), batch_size):
+            batch_dates = next_trade_dates[i:i+batch_size]
+            logger.info("批量获取分钟数据，批次%s/%s，共%s个交易日", 
+                       i//batch_size + 1, (len(next_trade_dates) + batch_size - 1)//batch_size, len(batch_dates))
             
-            for i in range(0, len(next_trade_dates), batch_size):
-                batch_dates = next_trade_dates[i:i+batch_size]
-                logger.info("批量获取%s分钟数据，批次%s/%s，共%s个交易日", 
-                           time_key, i//batch_size + 1, (len(next_trade_dates) + batch_size - 1)//batch_size, len(batch_dates))
-                
-                # 使用多线程并行获取该批次的分钟数据
-                with concurrent.futures.ThreadPoolExecutor(max_workers=min(10, len(batch_dates))) as executor:
-                    future_to_date = {executor.submit(get_minutes_data, ts_code, date, freq): date for date in batch_dates}
-                    for future in concurrent.futures.as_completed(future_to_date):
-                        date = future_to_date[future]
-                        try:
-                            minute_data_cache[time_key][date] = future.result()
-                        except Exception as e:
-                            logger.error("获取交易日%s的%s分钟数据失败: %s", date, time_key, e)
-                
-                # 添加延迟，避免请求过快
-                time.sleep(1)
-        
+            # 使用多线程并行获取该批次的分钟数据
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(10, len(batch_dates))) as executor:
+                future_to_date = {executor.submit(get_minutes_data, ts_code, date): date for date in batch_dates}
+                for future in concurrent.futures.as_completed(future_to_date):
+                    date = future_to_date[future]
+                    try:
+                        # 获取完整的分钟数据
+                        full_minute_data = future.result()
+                        
+                        # 根据不同的时间频率处理数据并存入缓存
+                        for time_key in ['1min', '5min', '15min', '30min', '60min']:
+                            minute_data_cache[time_key][date] = process_minutes_data(full_minute_data, time_key)
+                    except Exception as e:
+                        logger.error("获取或处理交易日%s的分钟数据失败: %s", date, e)
+            
+            # 添加延迟，避免请求过快
+            time.sleep(1)
+
         logger.info("批量获取分钟数据完成，耗时: %s秒", time.time() - batch_start_time)
         
         # 检查数据获取情况
@@ -580,7 +634,6 @@ def calculate_minutes_data(minute_data: pd.DataFrame, category: str, time_key: s
                 
                 # 计算收盘涨幅
                 close_pct_change = (minute_close - prev_close) / prev_close * 100
-                
                 # 累加涨跌幅，用于后续计算平均值
                 result[category][time_key]['max_pct_sum'] =  max(result[category][time_key]['max_pct_sum'], max_pct_change)
                 result[category][time_key]['min_pct_sum'] =  min(result[category][time_key]['min_pct_sum'], min_pct_change)
@@ -665,32 +718,32 @@ def analyze_stock(ts_code: str, stock_name: str, circ_mv: float) -> Dict[str, An
             # 检查本地是否已有该时间维度的分析结果
             file_path = os.path.join(data_dir, f"{ts_code}_{time_period}_probability.csv")
             
-            if os.path.exists(file_path):
-                # 如果文件存在且是今天生成的，直接读取
-                file_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
-                if file_time.date() == datetime.datetime.now().date():
-                    df = pd.read_csv(file_path, encoding='utf-8-sig')
+            # if os.path.exists(file_path):
+            #     # 如果文件存在且是今天生成的，直接读取
+            #     file_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+            #     if file_time.date() == datetime.datetime.now().date():
+            #         df = pd.read_csv(file_path, encoding='utf-8-sig')
                    
-                    # 转换为字典格式
-                    period_result = {}
-                    for category in df['当日涨幅'].unique():
-                        category_data = df[df['当日涨幅'] == category]
-                        period_result[category] = {}
+            #         # 转换为字典格式
+            #         period_result = {}
+            #         for category in df['当日涨幅'].unique():
+            #             category_data = df[df['当日涨幅'] == category]
+            #             period_result[category] = {}
                         
-                        for _, row in category_data.iterrows():
-                            time_key = next((k for k, v in TIME_FREQ_MAP.items() if v == row['时间段']), row['时间段'])
-                            period_result[category][time_key] = {
-                                'up_prob': row['涨概率'],
-                                'down_prob': row['跌概率'],
-                                'equal_prob': row['平概率'],
-                                'max_pct': row['最大涨幅'],
-                                'min_pct': row['最小涨幅'],
-                                'close_pct': row['收盘涨幅'],
-                                'total': row['样本数']
-                            }
+            #             for _, row in category_data.iterrows():
+            #                 time_key = next((k for k, v in TIME_FREQ_MAP.items() if v == row['时间段']), row['时间段'])
+            #                 period_result[category][time_key] = {
+            #                     'up_prob': row['涨概率'],
+            #                     'down_prob': row['跌概率'],
+            #                     'equal_prob': row['平概率'],
+            #                     'max_pct': row['最大涨幅'],
+            #                     'min_pct': row['最小涨幅'],
+            #                     'close_pct': row['收盘涨幅'],
+            #                     'total': row['样本数']
+            #                 }
                     
-                    results[time_period] = period_result
-                    continue
+            #         results[time_period] = period_result
+            #         continue
             
             # 计算概率
             probability = calculate_probability(stock_data, time_period, circ_mv)
