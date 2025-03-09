@@ -53,8 +53,10 @@ class StockService:
     def get_stock_probability(ts_code: str) -> Dict[str, Any]:
         """获取股票涨跌概率"""
         try:
+            # 先通过ts_code获取股票名称 
+            stock_info = StockService.get_stock_info(ts_code)
             # 分析股票
-            result = analyze_stock(ts_code)
+            result = analyze_stock(ts_code, stock_info['name'], stock_info['circ_mv'])
             
             if "error" in result:
                 return {"error": result["error"]}
@@ -82,7 +84,21 @@ class StockService:
                             "up_prob": prob_data.get("up_prob", 0),
                             "down_prob": prob_data.get("down_prob", 0),
                             "equal_prob": prob_data.get("equal_prob", 0),
-                            "total": prob_data.get("total", 0)
+                            "total": prob_data.get("total", 0),
+                            "volume_ratio": prob_data.get("volume_ratio", 0),
+                            "max_pct": prob_data.get("max_pct", 0),
+                            "min_pct": prob_data.get("min_pct", 0),
+                            "close_pct": prob_data.get("close_pct", 0),
+                            "desc": {
+                                'up_prob': "上涨概率",
+                                'down_prob': "下跌概率",
+                                'equal_prob': "持平概率",
+                                'total': "样本数",
+                                'volume_ratio': "成交量占比",
+                                'max_pct': "最大涨幅",
+                                'min_pct': "最小涨幅",
+                                'close_pct': "收盘涨幅",
+                            }
                         }
             
             return formatted_result
@@ -96,7 +112,27 @@ class StockService:
         try:
             # 首先尝试从过滤后的股票列表中查找
             stocks = StockService.get_filtered_stocks()
-            
+            """
+            名称	类型	描述
+            ts_code	str	TS股票代码
+            trade_date	str	交易日期
+            close	float	当日收盘价
+            turnover_rate	float	换手率（%）
+            turnover_rate_f	float	换手率（自由流通股）
+            volume_ratio	float	量比
+            pe	float	市盈率（总市值/净利润， 亏损的PE为空）
+            pe_ttm	float	市盈率（TTM，亏损的PE为空）
+            pb	float	市净率（总市值/净资产）
+            ps	float	市销率
+            ps_ttm	float	市销率（TTM）
+            dv_ratio	float	股息率 （%）
+            dv_ttm	float	股息率（TTM）（%）
+            total_share	float	总股本 （万股）
+            float_share	float	流通股本 （万股）
+            free_share	float	自由流通股本 （万）
+            total_mv	float	总市值 （万元）
+            circ_mv	float	流通市值（万元）
+            """
             # 查找指定股票
             for stock in stocks:
                 if stock['ts_code'] == ts_code:
@@ -106,7 +142,21 @@ class StockService:
                         "industry": stock.get('industry', ''),
                         "market": stock.get('market', ''),
                         "total_mv": stock.get('total_mv', 0),
-                        "circ_mv": stock.get('circ_mv', 0)
+                        "circ_mv": stock.get('circ_mv', 0),
+                        "trade_date": stock.get('trade_date', ''),
+                        "close": stock.get('close', 0),
+                        "turnover_rate": stock.get('turnover_rate', 0),
+                        "turnover_rate_f": stock.get('turnover_rate_f', 0),
+                        "volume_ratio": stock.get('volume_ratio', 0),
+                        "pe": stock.get('pe', 0),
+                        "pe_ttm": stock.get('pe_ttm', 0),
+                        "pb": stock.get('pb', 0),
+                        "ps": stock.get('ps', 0),
+                        "ps_ttm": stock.get('ps_ttm', 0),
+                        "dv_ratio": stock.get('dv_ratio', 0),
+                        "dv_ttm": stock.get('dv_ttm', 0),
+                        
+
                     }
             
             # 如果在过滤后的列表中找不到，直接从Tushare获取
@@ -138,12 +188,24 @@ class StockService:
                     logger.warning(f"获取股票{ts_code}市值数据失败: {e}")
                 
                 return {
-                    "ts_code": stock['ts_code'],
+                  "ts_code": stock['ts_code'],
                     "name": stock['name'],
                     "industry": stock.get('industry', ''),
                     "market": stock.get('market', ''),
                     "total_mv": stock.get('total_mv', 0),
-                    "circ_mv": stock.get('circ_mv', 0)
+                    "circ_mv": stock.get('circ_mv', 0),
+                    "trade_date": stock.get('trade_date', ''),
+                    "close": stock.get('close', 0),
+                    "turnover_rate": stock.get('turnover_rate', 0),
+                    "turnover_rate_f": stock.get('turnover_rate_f', 0),
+                    "volume_ratio": stock.get('volume_ratio', 0),
+                    "pe": stock.get('pe', 0),
+                    "pe_ttm": stock.get('pe_ttm', 0),
+                    "pb": stock.get('pb', 0),
+                    "ps": stock.get('ps', 0),
+                    "ps_ttm": stock.get('ps_ttm', 0),
+                    "dv_ratio": stock.get('dv_ratio', 0),
+                    "dv_ttm": stock.get('dv_ttm', 0),
                 }
             except Exception as e:
                 logger.error(f"从Tushare获取股票{ts_code}信息失败: {e}")
