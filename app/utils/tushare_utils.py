@@ -1,15 +1,19 @@
 import os
+from typing import Dict, Optional, Any
 import pandas as pd
 import tushare as ts
 import datetime
 import time
-from typing import Dict, List, Optional, Any, Tuple
+import traceback
 import logging
 import threading
+import glob
+import concurrent.futures
+from app.utils.logger import setup_logger
 
 # 配置日志
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
+
 
 # 创建一个请求限制器类
 class RequestLimiter:
@@ -33,7 +37,7 @@ class RequestLimiter:
                 oldest_request = self.request_times[0]
                 wait_time = 60 - (now - oldest_request)
                 if wait_time > 0:
-                    logger.info(f"已达到每分钟{self.max_requests}次请求限制，等待{wait_time:.2f}秒")
+                    # logger.info("已达到每分钟%s次请求限制，等待%s秒", self.max_requests, wait_time)
                     time.sleep(wait_time)
                     # 重新开始计时
                     now = time.time()
@@ -54,7 +58,7 @@ try:
     pro = ts.pro_api(TUSHARE_TOKEN)
     logger.info("Tushare API初始化成功")
 except Exception as e:
-    logger.error(f"Tushare API初始化失败: {e}")
+    logger.error("Tushare API初始化失败: %s", e)
     pro = None
 
 # 定义常量
@@ -68,11 +72,12 @@ LIST_RANGE_MAP = {
 }
 
 TIME_PERIOD_MAP = {
-    'm1': '近1月'
+    # 'm1': '近1月',
     # 'm3': '3月',
     # 'm6': '6月',
     # 'y1': '1年',
-    # 'y2': '2年',
+    'y2': '2年',
+    # 数据量太大，暂时不分析
     # 'y3': '3年',
     # 'y4': '4年',
     # 'y5': '5年'
@@ -103,16 +108,16 @@ PRICE_CHANGE_CATEGORIES = {
 
 # 涨跌幅场景描述
 SCENARIO_DESCRIPTIONS = {
-    'micro_up': '今天微涨(涨幅<1%)，第二天概率情况',
-    'small_up': '今天小涨(涨幅<3%)，第二天概率情况',
-    'medium_up': '今天中涨(涨幅<5%)，第二天概率情况',
-    'large_up': '今天大涨(涨幅<7%)，第二天概率情况',
-    'limit_up': '今天涨停(涨幅>=7%)，第二天概率情况',
-    'flat': '今天平开(涨幅=0%)，第二天概率情况',
-    'small_down': '今天小跌(跌幅<-1%)，第二天概率情况',
-    'medium_down': '今天中跌(跌幅<-3%)，第二天概率情况',
-    'large_down': '今天大跌(跌幅<-5%)，第二天概率情况',
-    'limit_down': '今天跌停(跌幅<=-5%)，第二天概率情况',
+    'micro_up': '今天微涨(0 ~ 1%)，明天概率情况',
+    'small_up': '今天小涨(1% ~ 3%)，明天概率情况',
+    'medium_up': '今天中涨(3% ~ 5%)，明天概率情况',
+    'large_up': '今天大涨(7% ~ 涨停)，明天概率情况',
+    'limit_up': '今天涨停()涨停，明天概率情况',
+    'flat': '今天平开(涨幅=0%)  ，明天概率情况',
+    'small_down': '今天小跌(-1% ~ 0)，明天概率情况',
+    'medium_down': '今天中跌(-3% ~ -1%)，明天概率情况',
+    'large_down': '今天大跌(-5% ~ -3%)，明天概率情况',
+    'limit_down': '今天跌停(-5% ~ -7%)，明天概率情况',
     'range_1_3p': '今天1-3%，明天概率情况',
     'range_3_5p': '今天3-5%，明天概率情况',
     'range_5_7p': '今天5-7%，明天概率情况',
@@ -126,7 +131,7 @@ def get_stock_list() -> pd.DataFrame:
         # 获取所有上市股票
         stocks = pro.stock_basic(exchange='', list_status='L', 
                                 fields='ts_code,symbol,name,area,industry,market,list_date')
-        logger.info(f"获取股票列表成功，共{len(stocks)}条记录")
+        logger.info("获取股票列表成功，共%s条记录", len(stocks))
         return stocks
     except Exception as e:
         logger.error(f"获取股票列表失败: {e}")
@@ -142,7 +147,13 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
     try:
         # 排除北交所股票
         filtered_stocks = stocks[~stocks['ts_code'].str.endswith('.BJ')]
-        logger.info(f"排除北交所股票后，剩余{len(filtered_stocks)}条记录")
+        logger.info("排除北交所股票后，剩余%s条记录", len(filtered_stocks))
+        # 排除科创板 ts_code 688开头
+        filtered_stocks = filtered_stocks[~filtered_stocks['ts_code'].str.startswith('688')]
+        logger.info("排除科创板后，剩余%s条记录", len(filtered_stocks))
+        # 排除 st *st *st
+        filtered_stocks = filtered_stocks[~filtered_stocks['name'].str.contains('ST')]
+        logger.info("排除ST后，剩余%s条记录", len(filtered_stocks))
         
         # 获取最新交易日期
         latest_trade_date = pro.trade_cal(exchange='', start_date=datetime.datetime.now().strftime('%Y%m%d'), 
@@ -159,7 +170,6 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
         # !!! 取 20250307
         latest_trade_date = '20250307'
         
-        logger.info(f"获取到最新交易日期: {latest_trade_date}")
         
         try:
             # 检查是否有足够的积分调用daily_basic接口
@@ -169,25 +179,24 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
             # 尝试获取市值数据
             market_values = []
             # 分批获取，避免一次性请求过多
-            batch_size = 100
+            batch_size = 1000
             for i in range(0, len(filtered_stocks), batch_size):
                 batch = filtered_stocks.iloc[i:i+batch_size]
                 ts_codes = ','.join(batch['ts_code'].tolist())
                 try:
-                    logger.info(f"尝试获取第{i//batch_size + 1}批股票的市值数据，共{len(batch)}只股票")
-                    mv_data = pro.daily_basic(ts_code=ts_codes, trade_date=latest_trade_date, 
-                                             fields='ts_code,total_mv,circ_mv')
+                    logger.info("尝试获取第%s批股票的市值数据，共%s只股票", i//batch_size + 1, len(batch))
+                    mv_data = pro.daily_basic(ts_code=ts_codes, trade_date=latest_trade_date)
                     
                     if mv_data.empty:
-                        logger.warning(f"第{i//batch_size + 1}批股票的市值数据为空")
+                        logger.warning("第%s批股票的市值数据为空", i//batch_size + 1)
                     else:
-                        logger.info(f"成功获取第{i//batch_size + 1}批股票的市值数据，共{len(mv_data)}条记录")
+                        logger.info("成功获取第%s批股票的市值数据，共%s条记录", i//batch_size + 1, len(mv_data))
                         market_values.append(mv_data)
                     
                     # 避免频繁请求
-                    time.sleep(0.5)
+                    time.sleep(0.01)
                 except Exception as e:
-                    logger.error(f"获取第{i//batch_size + 1}批股票的市值数据失败: {e}")
+                    logger.error("获取第%s批股票的市值数据失败: %s", i//batch_size + 1, e)
                     continue
             
             if not market_values:
@@ -208,31 +217,43 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
                     merged_df = pd.merge(filtered_stocks, market_value_df, on='ts_code', how='left')
                     
                     # 保存合并后的数据到CSV文件，方便调试
-                    merged_df.to_csv('data/merged_stocks.csv', index=False, encoding='utf-8-sig')
-                    logger.info(f"已将合并后的数据保存到data/merged_stocks.csv，共{len(merged_df)}条记录")
+                    # merged_df.to_csv('data/merged_stocks.csv', index=False, encoding='utf-8-sig')
+                    logger.info("已将合并后的数据保存到data/merged_stocks.csv，共%s条记录", len(merged_df))
                     
-                    # 过滤市值在10 * 10000到5000 * 10000 之间的股票单位 万元
-                    low_mv = 10 * 10000
-                    high_mv = 5000 * 10000
+                    # 过滤市值在10 * 10000到5000 * 10000 之间的股票单位 万元 10亿到 300亿
+                    low_mv = 30 * 10000
+                    high_mv = 222 * 10000
                     # 注意：total_mv和circ_mv单位为万元，需要转换
                     # 只有在市值数据不为空的情况下才进行过滤
                     if 'total_mv' in merged_df.columns and not merged_df['total_mv'].isna().all():
                         # 保存过滤前的数据
-                        merged_df.to_csv('data/before_filter.csv', index=False, encoding='utf-8-sig')
+                        # merged_df.to_csv('data/before_filter.csv', index=False, encoding='utf-8-sig')
                         
                         # 过滤市值
                         result = merged_df[(merged_df['total_mv'] >= low_mv) & (merged_df['total_mv'] <= high_mv)]
                         
                         # 保存过滤后的数据
-                        result.to_csv('data/after_filter.csv', index=False, encoding='utf-8-sig')
+                        # result.to_csv('data/after_filter.csv', index=False, encoding='utf-8-sig')
                         
-                        logger.info(f"过滤市值后，剩余{len(result)}条记录")
+                        logger.info("过滤市值后，剩余%s条记录", len(result))
                        
                         
                         # 保存被过滤掉的数据
                         filtered_out = merged_df[~merged_df.index.isin(result.index)]
-                        filtered_out.to_csv('data/filtered_out.csv', index=False, encoding='utf-8-sig')
-                        logger.info(f"被过滤掉的记录已保存到data/filtered_out.csv，共{len(filtered_out)}条记录")
+                        filtered_out.to_csv('data/市值小于30亿或者大于222亿之间的股票.csv', index=False, encoding='utf-8-sig')
+                        logger.info("被过滤掉的记录已保存到data/市值小于30亿或者大于222亿之间的股票.csv，共%s条记录", len(filtered_out))
+                        # 过滤流通性 保留流通市值/总市值 > 0.7 小于的 则过滤掉
+                        result = result[result['circ_mv'] / result['total_mv'] > 0.7]
+                        logger.info("过滤流通性后，剩余%s条记录", len(result))
+                        # 保存过滤后的数据
+                        result.to_csv('data/市值30亿_222亿之间流通性大于70%的股票.csv', index=False, encoding='utf-8-sig')
+                        logger.info("过滤后数据已保存到data/市值30亿_222亿之间流通性大于70%的股票.csv，共%s条记录", len(result))
+                        # 过滤掉特定股票 比如 负面新闻
+                        bad_ts_codes = ["600811.SH"]
+                        # 存在于 bad_ts_codes 的 则过滤掉
+                        result = result[~result['ts_code'].isin(bad_ts_codes)]
+                        logger.info("过滤特定股票后，剩余%s条记录", len(result))
+                       
                     else:
                         logger.warning("市值数据为空，无法进行市值过滤")
                         result = merged_df
@@ -242,14 +263,14 @@ def filter_stocks(stocks: pd.DataFrame) -> pd.DataFrame:
                 logger.warning("过滤后的结果为空，将返回原始的股票列表")
                 result = filtered_stocks
             
-            logger.info(f"最终返回{len(result)}条股票记录")
+            logger.info("最终返回%s条股票记录", len(result))
             return result
         except Exception as e:
-            logger.error(f"过滤股票失败: {e}")
+            logger.error("过滤股票失败: %s", e)
             # 如果发生错误，至少返回原始的股票列表
             return filtered_stocks
     except Exception as e:
-        logger.error(f"过滤股票失败: {e}")
+        logger.error("过滤股票失败: %s", e)
         return pd.DataFrame()
 
 def get_stock_daily_data(ts_code: str, start_date: str = '20150101', end_date: Optional[str] = None) -> pd.DataFrame:
@@ -269,10 +290,10 @@ def get_stock_daily_data(ts_code: str, start_date: str = '20150101', end_date: O
         # 合并数据
         result = pd.merge(daily_data, daily_price, on=['ts_code', 'trade_date'], how='left', suffixes=('', '_price'))
         
-        logger.info(f"获取股票{ts_code}日线数据成功，共{len(result)}条记录")
+        logger.info("获取股票%s日线数据成功，共%s条记录", ts_code, len(result))
         return result
     except Exception as e:
-        logger.error(f"获取股票{ts_code}日线数据失败: {e}")
+        logger.error("获取股票%s日线数据失败: %s", ts_code, e)
         return pd.DataFrame()
 
 def categorize_pct_change(pct_chg: float) -> str:
@@ -309,10 +330,10 @@ def get_auction_data(ts_code: str, trade_date: str) -> pd.DataFrame:
         auction_data = pro.stk_auction_o(ts_code=ts_code, trade_date=trade_date)
         return auction_data
     except Exception as e:
-        logger.error(f"获取股票{ts_code}竞价数据失败: {e}")
+        logger.error("获取股票%s竞价数据失败: %s", ts_code, e)
         return pd.DataFrame()
 
-def get_minute_data(ts_code: str, trade_date: str, freq: str = '1min') -> pd.DataFrame:
+def get_minutes_data(ts_code: str, trade_date: str, freq: int = 1) -> pd.DataFrame:
     """获取股票分钟行情数据"""
     try:
         # 使用请求限制器，确保不超过API限制
@@ -321,15 +342,28 @@ def get_minute_data(ts_code: str, trade_date: str, freq: str = '1min') -> pd.Dat
         # 转换日期格式
         date_obj = datetime.datetime.strptime(trade_date, '%Y%m%d')
         start_time = f"{date_obj.strftime('%Y-%m-%d')} 09:30:00"
-        end_time = f"{date_obj.strftime('%Y-%m-%d')} 10:30:00"
-        
-        minute_data = pro.stk_mins(ts_code=ts_code, freq=freq, start_date=start_time, end_date=end_time)
+        end_time = '';
+        if freq == 1:
+            end_time = f"{date_obj.strftime('%Y-%m-%d')} 09:30:00"
+        elif freq == 5:
+            start_time = f"{date_obj.strftime('%Y-%m-%d')} 09:30:00"
+            end_time = f"{date_obj.strftime('%Y-%m-%d')} 09:35:00"
+        elif freq == 15:
+            start_time = f"{date_obj.strftime('%Y-%m-%d')} 09:35:00"
+            end_time = f"{date_obj.strftime('%Y-%m-%d')} 09:45:00"
+        elif freq == 30:
+            start_time = f"{date_obj.strftime('%Y-%m-%d')} 09:45:00"
+            end_time = f"{date_obj.strftime('%Y-%m-%d')} 10:15:00"
+        elif freq == 60:
+            start_time = f"{date_obj.strftime('%Y-%m-%d')} 10:15:00"
+            end_time = f"{date_obj.strftime('%Y-%m-%d')} 11:30:00"
+        minute_data = pro.stk_mins(ts_code=ts_code, freq='1min', start_date=start_time, end_date=end_time)
         return minute_data
     except Exception as e:
-        logger.error(f"获取股票{ts_code}分钟行情数据失败: {e}")
+        logger.error("获取股票%s分钟行情数据失败: %s", ts_code, e)
         return pd.DataFrame()
 
-def calculate_probability(stock_data: pd.DataFrame, time_period: str) -> Dict[str, Dict[str, Dict[str, float]]]:
+def calculate_probability(stock_data: pd.DataFrame, time_period: str, circ_mv: float) -> Dict[str, Dict[str, Dict[str, float]]]:
     """计算不同涨幅区间对应的第二天涨跌概率
     
     Args:
@@ -351,16 +385,16 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str) -> Dict[st
             start_date = (datetime.datetime.strptime(end_date, '%Y%m%d') - 
                           datetime.timedelta(days=365*years)).strftime('%Y%m%d')
         else:
-            logger.error(f"不支持的时间周期: {time_period}")
+            logger.error("不支持的时间周期: %s", time_period)
             return {}
         
         period_data = stock_data[stock_data['trade_date'] >= start_date].copy()
         
         if period_data.empty:
-            logger.warning(f"时间周期{time_period}内没有数据")
+            logger.warning("时间周期%s内没有数据", time_period)
             return {}
         
-        # 按涨跌幅分类， 变量映射成
+        # 按涨跌幅分类
         period_data['pct_chg_category'] = period_data['pct_chg'].apply(categorize_pct_change)
         
         # 计算第二天的数据
@@ -369,32 +403,112 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str) -> Dict[st
         # 初始化结果字典
         result = {}
         
+        # 获取唯一的交易日期和股票代码
+        next_trade_dates = period_data['next_trade_date'].dropna().unique()
+        ts_code = period_data['ts_code'].iloc[0]  # 假设所有行的ts_code都相同
+        
+        logger.info("预先批量获取竞价和分钟数据，共%s个交易日", len(next_trade_dates))
+        
+        # 使用线程安全的字典
+        auction_cache = {}
+        minute_data_cache = {
+            '1min': {},
+            '5min': {},
+            '15min': {},
+            '30min': {},
+            '60min': {}
+        }
+        
+        # 批量处理，每批100个交易日
+        batch_size = 100
+        
+        # 批量获取竞价数据
+        batch_start_time = time.time()
+        for i in range(0, len(next_trade_dates), batch_size):
+            batch_dates = next_trade_dates[i:i+batch_size]
+            logger.info("批量获取竞价数据，批次%s/%s，共%s个交易日", 
+                       i//batch_size + 1, (len(next_trade_dates) + batch_size - 1)//batch_size, len(batch_dates))
+            
+            # 使用多线程并行获取该批次的竞价数据
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(10, len(batch_dates))) as executor:
+                future_to_date = {executor.submit(get_auction_data, ts_code, date): date for date in batch_dates}
+                for future in concurrent.futures.as_completed(future_to_date):
+                    date = future_to_date[future]
+                    try:
+                        auction_cache[date] = future.result()
+                    except Exception as e:
+                        logger.error("获取交易日%s的竞价数据失败: %s", date, e)
+            
+            # 添加延迟，避免请求过快
+            time.sleep(1)
+        
+        logger.info("批量获取竞价数据完成，耗时: %s秒", time.time() - batch_start_time)
+        
+        # 批量获取分钟数据
+        batch_start_time = time.time()
+        for freq, time_key in [(1, '1min'), (5, '5min'), (15, '15min'), (30, '30min'), (60, '60min')]:
+            logger.info("开始获取%s分钟数据", time_key)
+            
+            for i in range(0, len(next_trade_dates), batch_size):
+                batch_dates = next_trade_dates[i:i+batch_size]
+                logger.info("批量获取%s分钟数据，批次%s/%s，共%s个交易日", 
+                           time_key, i//batch_size + 1, (len(next_trade_dates) + batch_size - 1)//batch_size, len(batch_dates))
+                
+                # 使用多线程并行获取该批次的分钟数据
+                with concurrent.futures.ThreadPoolExecutor(max_workers=min(10, len(batch_dates))) as executor:
+                    future_to_date = {executor.submit(get_minutes_data, ts_code, date, freq): date for date in batch_dates}
+                    for future in concurrent.futures.as_completed(future_to_date):
+                        date = future_to_date[future]
+                        try:
+                            minute_data_cache[time_key][date] = future.result()
+                        except Exception as e:
+                            logger.error("获取交易日%s的%s分钟数据失败: %s", date, time_key, e)
+                
+                # 添加延迟，避免请求过快
+                time.sleep(1)
+        
+        logger.info("批量获取分钟数据完成，耗时: %s秒", time.time() - batch_start_time)
+        
+        # 检查数据获取情况
+        logger.info("竞价数据获取情况: 共%s/%s个交易日有数据", 
+                   sum(1 for d in auction_cache.values() if not d.empty), len(next_trade_dates))
+        
+        for time_key in minute_data_cache:
+            logger.info("%s数据获取情况: 共%s/%s个交易日有数据", 
+                       time_key, sum(1 for d in minute_data_cache[time_key].values() if not d.empty), len(next_trade_dates))
+        
         # 遍历每个涨跌幅分类
         for category in period_data['pct_chg_category'].unique():
             category_data = period_data[period_data['pct_chg_category'] == category]
             
             # 初始化该分类的结果
             result[category] = {
-                'auction': {'up': 0, 'down': 0, 'equal': 0, 'total': 0},
-                '1min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0},
-                '5min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0},
-                '15min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0},
-                '30min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0},
-                '60min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0}
+                'auction': {'up': 0, 'down': 0, 'equal': 0, 'total': 0, 'volume_ratio': 0},
+                '1min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0, 'max_pct': 0, 'min_pct': 0, 'close_pct': 0, 'max_pct_sum': 0, 'min_pct_sum': 0, 'close_pct_sum': 0},
+                '5min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0, 'max_pct': 0, 'min_pct': 0, 'close_pct': 0, 'max_pct_sum': 0, 'min_pct_sum': 0, 'close_pct_sum': 0},
+                '15min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0, 'max_pct': 0, 'min_pct': 0, 'close_pct': 0, 'max_pct_sum': 0, 'min_pct_sum': 0, 'close_pct_sum': 0},
+                '30min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0, 'max_pct': 0, 'min_pct': 0, 'close_pct': 0, 'max_pct_sum': 0, 'min_pct_sum': 0, 'close_pct_sum': 0},
+                '60min': {'up': 0, 'down': 0, 'equal': 0, 'total': 0, 'max_pct': 0, 'min_pct': 0, 'close_pct': 0, 'max_pct_sum': 0, 'min_pct_sum': 0, 'close_pct_sum': 0}
             }
             
             # 遍历该分类的每一天
-            for _, row in category_data.iterrows():
+            iterrows = category_data.iterrows()
+            iterrows_count = 0
+            
+            for _, row in iterrows:
+                iterrows_count += 1
                 if pd.isna(row['next_trade_date']):
                     continue
                 
-                # 获取竞价数据
-                auction_data = get_auction_data(row['ts_code'], row['next_trade_date'])
+                next_trade_date = row['next_trade_date']
+                prev_close = row['close']
+                
+                # 使用缓存的竞价数据
+                auction_data = auction_cache.get(next_trade_date, pd.DataFrame())
                 
                 if not auction_data.empty:
                     # 计算竞价涨跌
                     auction_open = auction_data['open'].iloc[0]
-                    prev_close = row['close']
                     
                     if auction_open > prev_close:
                         result[category]['auction']['up'] += 1
@@ -404,32 +518,21 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str) -> Dict[st
                         result[category]['auction']['equal'] += 1
                     
                     result[category]['auction']['total'] += 1
+                    # 计算集合竞价最大涨幅
+                    result[category]['auction']['max_pct'] = round((auction_data['high'].iloc[0] - prev_close) / prev_close * 100, 2)
+                    # 计算集合竞价最小涨幅
+                    result[category]['auction']['min_pct'] = round((auction_data['low'].iloc[0] - prev_close) / prev_close * 100, 2)
+                    # 计算集合竞价收盘涨幅
+                    result[category]['auction']['close_pct'] = round((auction_data['close'].iloc[0] - prev_close) / prev_close * 100, 2)
+                    # 计算该时间区间内 成交量占据流通市值的百分比 保留 2位小数
+                    result[category]['auction']['volume_ratio'] = round(auction_data['amount'].iloc[0] / circ_mv, 2)
                 
-                # 获取分钟数据并计算涨跌
-                # 优化：只获取一次1分钟数据，其他频率的数据可以从1分钟数据中计算得出
-                minute_data = get_minute_data(row['ts_code'], row['next_trade_date'], '1min')
-                
-                if not minute_data.empty:
-                    # 计算1分钟数据的涨跌
-                    minute_close = minute_data['close'].iloc[0]
-                    prev_close = row['close']
-                    
-                    if minute_close > prev_close:
-                        result[category]['1min']['up'] += 1
-                    elif minute_close < prev_close:
-                        result[category]['1min']['down'] += 1
-                    else:
-                        result[category]['1min']['equal'] += 1
-                    
-                    result[category]['1min']['total'] += 1
-                    
-                    # 为了简化，我们假设其他频率的数据与1分钟数据相同
-                    # 在实际应用中，您可能需要根据业务需求进行更复杂的计算
-                    for freq in ['5min', '15min', '30min', '60min']:
-                        result[category][freq]['up'] = result[category]['1min']['up']
-                        result[category][freq]['down'] = result[category]['1min']['down']
-                        result[category][freq]['equal'] = result[category]['1min']['equal']
-                        result[category][freq]['total'] = result[category]['1min']['total']
+                # 使用缓存的分钟数据
+                for time_key in ['1min', '5min', '15min', '30min', '60min']:
+                    minute_data = minute_data_cache[time_key].get(next_trade_date, pd.DataFrame())
+                    calculate_minutes_data(minute_data, category, time_key, result, row)
+            
+            
             
             # 计算概率
             for time_key in result[category]:
@@ -438,13 +541,67 @@ def calculate_probability(stock_data: pd.DataFrame, time_period: str) -> Dict[st
                     result[category][time_key]['up_prob'] = round(result[category][time_key]['up'] / total * 100, 2)
                     result[category][time_key]['down_prob'] = round(result[category][time_key]['down'] / total * 100, 2)
                     result[category][time_key]['equal_prob'] = round(result[category][time_key]['equal'] / total * 100, 2)
+                    
+                    # 计算平均涨跌幅（仅对非1min和非auction的数据）
+                    if time_key not in ['1min', 'auction'] and 'max_pct_sum' in result[category][time_key]:
+                        result[category][time_key]['max_pct'] = round(result[category][time_key]['max_pct_sum'] / total, 2)
+                        result[category][time_key]['min_pct'] = round(result[category][time_key]['min_pct_sum'] / total, 2)
+                        result[category][time_key]['close_pct'] = round(result[category][time_key]['close_pct_sum'] / total, 2)
         
         return result
     except Exception as e:
-        logger.error(f"计算概率失败: {e}")
+        logger.error("计算概率失败: %s", e)
+        traceback.print_exc()  # 打印完整的堆栈跟踪
         return {}
 
-def save_probability_to_csv(ts_code: str, probability_data: Dict[str, Dict[str, Dict[str, float]]], time_period: str):
+def calculate_minutes_data(minute_data: pd.DataFrame, category: str, time_key: str, result: Dict[str, Dict[str, Dict[str, float]]], row: pd.Series) -> pd.DataFrame:
+    """计算分钟数据"""
+    try:
+        if not minute_data.empty:   
+            max_price = minute_data['high'].max()
+            min_price = minute_data['low'].min()
+            
+            # 计算1分钟数据的涨跌, 取最后一条数据
+            # 如果是1min 则取第一条
+            if time_key == '1min':
+                minute_close = minute_data['close'].iloc[0]
+            else:
+                minute_close = minute_data['close'].iloc[-1]
+                # 计算最大涨幅、最小涨幅和收盘涨幅
+                prev_close = row['close']
+                
+                # 计算最大涨幅（使用high列的最大值）
+                
+                max_pct_change = (max_price - prev_close) / prev_close * 100
+                
+                # 计算最小涨幅（使用low列的最小值）
+                
+                min_pct_change = (min_price - prev_close) / prev_close * 100
+                
+                # 计算收盘涨幅
+                close_pct_change = (minute_close - prev_close) / prev_close * 100
+                
+                # 累加涨跌幅，用于后续计算平均值
+                result[category][time_key]['max_pct_sum'] =  max(result[category][time_key]['max_pct_sum'], max_pct_change)
+                result[category][time_key]['min_pct_sum'] =  min(result[category][time_key]['min_pct_sum'], min_pct_change)
+                result[category][time_key]['close_pct_sum'] = max(result[category][time_key]['close_pct_sum'], close_pct_change)
+
+            prev_close = row['close']
+            
+            if minute_close > prev_close:
+                result[category][time_key]['up'] += 1
+               
+            elif minute_close < prev_close:
+                result[category][time_key]['down'] += 1
+            else:
+                result[category][time_key]['equal'] += 1
+            
+            result[category][time_key]['total'] += 1
+    except Exception as e:
+        logger.error("计算分钟数据失败: %s", e)
+        return pd.DataFrame()
+    
+def save_probability_to_csv(ts_code: str, probability_data: Dict[str, Dict[str, Dict[str, float]]], time_period: str, stock_name: str):
     """将概率数据保存到CSV文件"""
     try:
         # 创建数据目录
@@ -458,28 +615,37 @@ def save_probability_to_csv(ts_code: str, probability_data: Dict[str, Dict[str, 
         rows = []
         for category, time_data in probability_data.items():
             for time_key, prob_data in time_data.items():
+             
                 row = {
+                    '股票代码': ts_code,
+                    '股票名称': stock_name,
                     '当日涨幅': LIST_RANGE_MAP.get(category, category),
-                    '场景描述': SCENARIO_DESCRIPTIONS.get(category, f"今天{category}，第二天概率情况"),
+                    '场景描述': SCENARIO_DESCRIPTIONS.get(category, f"今天{category}，明天概率情况"),
                     '时间段': TIME_FREQ_MAP.get(time_key, time_key),
                     '涨概率': prob_data.get('up_prob', 0),
                     '跌概率': prob_data.get('down_prob', 0),
                     '平概率': prob_data.get('equal_prob', 0),
-                    '样本数': prob_data.get('total', 0)
+                    '最大涨幅': prob_data.get('max_pct', 0),
+                    '最小涨幅': prob_data.get('min_pct', 0),
+                    '收盘涨幅': prob_data.get('close_pct', 0),   
+                    # 计算该时间区间内 成交量占据流通市值的百分比
+                    '成交量占比': prob_data.get('volume_ratio', 0),
+                    '样本数': prob_data.get('total', 0),
                 }
+                
                 rows.append(row)
         
         # 创建DataFrame并保存
         df = pd.DataFrame(rows)
         df.to_csv(file_path, index=False, encoding='utf-8-sig')
-        logger.info(f"概率数据已保存到{file_path}")
+        logger.info("概率数据已保存到%s", file_path)
         
         return file_path
     except Exception as e:
-        logger.error(f"保存概率数据失败: {e}")
+        logger.error("保存概率数据失败: %s", e)
         return None
 
-def analyze_stock(ts_code: str) -> Dict[str, Any]:
+def analyze_stock(ts_code: str, stock_name: str, circ_mv: float) -> Dict[str, Any]:
     """分析股票数据，计算不同时间维度的涨跌概率"""
     try:
         # 检查本地是否已有分析结果
@@ -494,6 +660,8 @@ def analyze_stock(ts_code: str) -> Dict[str, Any]:
         
         # 计算不同时间维度的概率
         for time_period in TIME_PERIOD_MAP.keys():
+            # 计算分析耗时
+            start_time = time.time()
             # 检查本地是否已有该时间维度的分析结果
             file_path = os.path.join(data_dir, f"{ts_code}_{time_period}_probability.csv")
             
@@ -515,6 +683,9 @@ def analyze_stock(ts_code: str) -> Dict[str, Any]:
                                 'up_prob': row['涨概率'],
                                 'down_prob': row['跌概率'],
                                 'equal_prob': row['平概率'],
+                                'max_pct': row['最大涨幅'],
+                                'min_pct': row['最小涨幅'],
+                                'close_pct': row['收盘涨幅'],
                                 'total': row['样本数']
                             }
                     
@@ -522,16 +693,104 @@ def analyze_stock(ts_code: str) -> Dict[str, Any]:
                     continue
             
             # 计算概率
-            probability = calculate_probability(stock_data, time_period)
+            probability = calculate_probability(stock_data, time_period, circ_mv)
             
             if probability:
                 # 保存到CSV
-                save_probability_to_csv(ts_code, probability, time_period)
+                save_probability_to_csv(ts_code, probability, time_period, stock_name)
                 results[time_period] = probability
-        
+            # 计算分析耗时, 猜测加粗打印
+            end_time = time.time()
+            logger.info("分析股票%s %s 耗时: %s秒", ts_code, time_period, end_time - start_time)
         return results
     except Exception as e:
         # 打印完成错误堆栈
         print(traceback.format_exc())
-        logger.error(f"分析股票{ts_code}失败: {e}")
-        return {"error": str(e)} 
+        logger.error("分析股票%s失败: %s", ts_code, e)
+        return {"error": str(e)}
+
+def get_stock_probability_by_pct(ts_code: str, pct_chg: float) -> Dict[str, Dict[str, float]]:
+    """
+    获取特定股票在特定涨幅范围内的平均概率
+    
+    Args:
+        ts_code: 股票代码
+        pct_chg: 涨跌幅百分比，例如4.75
+        
+    Returns:
+        所有时间段的平均概率数据
+    """
+    try:
+        # 根据涨跌幅确定对应的分类
+        category = categorize_pct_change(pct_chg)
+        
+        # 获取对应的涨幅区间显示值
+        display_range = LIST_RANGE_MAP.get(category, category)
+        
+        # 创建数据目录
+        data_dir = os.getenv('DATA_DIR', './data')
+        
+        # 查找所有该股票的概率文件
+        probability_files = glob.glob(os.path.join(data_dir, f"{ts_code}_*_probability.csv"))
+        
+        if not probability_files:
+            logger.warning("未找到股票%s的概率数据文件", ts_code)
+            return {}
+        
+        # 初始化结果字典 - 用于存储所有时间段的总和
+        total_up_prob = 0
+        total_down_prob = 0
+        total_equal_prob = 0
+        total_samples = 0
+        total_time_periods = 0
+        max_pct = 0
+        min_pct = 0
+        close_pct = 0
+        
+        # 遍历所有概率文件
+        for file_path in probability_files:
+            try:
+                # 读取CSV文件
+                df = pd.read_csv(file_path)
+                
+                # 筛选特定涨幅区间的数据
+                filtered_df = df[df['当日涨幅'] == display_range]
+                
+                if filtered_df.empty:
+                    logger.warning("文件%s中没有涨幅为%s的数据", file_path, display_range)
+                    continue
+                
+                # 计算所有时间段的总和
+                for _, row in filtered_df.iterrows():
+                    total_up_prob += row['涨概率']
+                    total_down_prob += row['跌概率']
+                    total_equal_prob += row['平概率']
+                    total_samples += row['样本数']
+                    total_time_periods += 1
+                    # 如果列不存在，则设置为0
+                    max_pct = max(max_pct, row.get('最大涨幅', 0))
+                    min_pct = min(min_pct, row.get('最小涨幅', 0))
+                    close_pct = row.get('收盘涨幅', 0)
+                    
+            except Exception as e:
+                logger.error("处理文件%s时出错: %s", file_path, e)
+                continue
+        
+        # 计算平均概率
+        result = {}
+        if total_time_periods > 0:
+            result = {
+                'up_prob': round(total_up_prob / total_time_periods, 2),
+                'down_prob': round(total_down_prob / total_time_periods, 2),
+                'equal_prob': round(total_equal_prob / total_time_periods, 2),
+                'avg_total': round(total_samples / total_time_periods, 2),
+                'max_pct': max_pct,
+                'min_pct': min_pct,
+                'close_pct': close_pct
+            }
+    
+        return result
+    
+    except Exception as e:
+        logger.error("获取股票%s在涨幅%s下的平均概率失败: %s", ts_code, pct_chg, e)
+        return {} 
